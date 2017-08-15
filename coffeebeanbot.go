@@ -3,6 +3,7 @@
 package coffeebeanbot
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,16 +22,27 @@ const (
 	discordBotPrefix = "Bot "
 	cmdPrefix        = "!bb "
 	cmdPrefixLen     = len(cmdPrefix)
+	pomDuration      = time.Minute * 25
 )
 
 // cmdHandler is the type for our functions that will be called upon receiving commands from a user.
 type cmdHandler func(s *discordgo.Session, m *discordgo.MessageCreate, extra string)
 
+type botCommand struct {
+	handler       cmdHandler
+	desc          string
+	exampleParams string
+}
+
 // Bot contains the information needed to run the Discord bot
 type Bot struct {
 	Config      Config
 	started     time.Time
-	cmdHandlers map[string]cmdHandler
+	cmdHandlers map[string]botCommand
+	discord     *discordgo.Session
+
+	helpMessage string
+	poms        channelPomMap
 }
 
 // Config is the Bot's configuration data
@@ -54,12 +66,43 @@ func LoadConfigFile(path string) (*Config, error) {
 	return &cfg, err
 }
 
-func (bot *Bot) registerCmdHandlers() {
-	bot.cmdHandlers = map[string]cmdHandler{
-		"ping":    bot.onCmdPing,
-		"started": bot.onCmdStarted,
-		"echo":    bot.onCmdEcho,
+// NewBot is how you should create a new Bot in order to assure that all initialization has been completed.
+func NewBot(config Config) *Bot {
+	bot := &Bot{
+		Config: config,
+		poms:   newChannelPomMap(),
 	}
+
+	bot.registerCmdHandlers()
+	bot.helpMessage = bot.buildHelpMessage()
+
+	return bot
+}
+
+func (bot *Bot) registerCmdHandlers() {
+	bot.cmdHandlers = map[string]botCommand{
+		"ping":    {handler: bot.onCmdPing, desc: "Pings the bot to ensure it is currently running", exampleParams: ""},
+		"started": {handler: bot.onCmdStarted, desc: "Shows when the current version of the bot started running", exampleParams: ""},
+		"echo":    {handler: bot.onCmdEcho, desc: "Echoes the given message back", exampleParams: "Hello, world!"},
+		"start":   {handler: bot.onCmdStartPom, desc: "Starts a Pomodoro work cycle on the channel", exampleParams: ""},
+		"cancel":  {handler: bot.onCmdCancelPom, desc: "Cancels the current Pomodoro work cycle on the channel", exampleParams: ""},
+		"help":    {handler: bot.onCmdHelp, desc: "Shows this help message", exampleParams: ""},
+	}
+}
+
+func (bot *Bot) buildHelpMessage() string {
+	helpBuf := bytes.Buffer{}
+	helpBuf.WriteString("This bot was written by Sean A. Pfeifer to help him get more done.\n")
+
+	// I don't really care about ordering right now - this is intentionally using the map iteration order,
+	// which I am aware is pseudo-random.
+	// TODO: Add a "group" attribute to the commands, and sort by group, then command.
+	for cmdStr, cmd := range bot.cmdHandlers {
+		helpBuf.WriteString(fmt.Sprintf("\n•  **%s**  -  %s\n", cmdStr, cmd.desc))
+		helpBuf.WriteString(fmt.Sprintf("    Example: `%s%s %s`\n", cmdPrefix, cmdStr, cmd.exampleParams))
+	}
+
+	return helpBuf.String()
 }
 
 // Start will start the bot, blocking until completion
@@ -68,17 +111,16 @@ func (bot *Bot) Start() error {
 		return errors.New("no auth token found in config")
 	}
 
-	discord, err := discordgo.New(discordBotPrefix + bot.Config.AuthToken)
+	var err error
+	bot.discord, err = discordgo.New(discordBotPrefix + bot.Config.AuthToken)
 	if err != nil {
 		return err
 	}
 
-	bot.registerCmdHandlers()
+	bot.discord.AddHandler(bot.onReady)
+	bot.discord.AddHandler(bot.onMessageReceived)
 
-	discord.AddHandler(bot.onReady)
-	discord.AddHandler(bot.onMessageReceived)
-
-	err = discord.Open()
+	err = bot.discord.Open()
 	if err != nil {
 		return err
 	}
@@ -87,7 +129,7 @@ func (bot *Bot) Start() error {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
-	return discord.Close()
+	return bot.discord.Close()
 }
 
 func (bot *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
@@ -116,7 +158,12 @@ func (bot *Bot) onMessageReceived(s *discordgo.Session, m *discordgo.MessageCrea
 				rest = cmd[1]
 			}
 
-			f(s, m, rest)
+			if f.handler != nil {
+				f.handler(s, m, rest)
+			} else {
+				log.Printf("Error: nil handler for command '%s'", cmd)
+				s.ChannelMessageSend(m.ChannelID, "Command error - please contact support.")
+			}
 		}
 	}
 }
@@ -133,4 +180,30 @@ func (bot *Bot) onCmdEcho(s *discordgo.Session, m *discordgo.MessageCreate, extr
 	// Make sure the echoed text can't break out of our quote box.
 	extra = strings.Replace(extra, "`", "", -1)
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Echo:  `%s`", extra))
+}
+
+func (bot *Bot) onCmdHelp(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
+	s.ChannelMessageSend(m.ChannelID, bot.helpMessage)
+}
+
+func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
+	if bot.poms.CreateIfEmpty(m.ChannelID, pomDuration, func() { bot.onPomEnded(m.ChannelID) }) {
+		s.ChannelMessageSend(m.ChannelID, "Pomodoro started!")
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "A Pomodoro is already running on this channel.")
+	}
+}
+
+func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
+	if bot.poms.RemoveIfExists(m.ChannelID) {
+		s.ChannelMessageSend(m.ChannelID, "Pomodoro cancelled!")
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "No Pomodoro running on this channel to cancel.")
+	}
+}
+
+// onPomEnded performs the notification
+func (bot *Bot) onPomEnded(channelID string) {
+	bot.discord.ChannelMessageSend(channelID, "Pomodoro ended!")
+	bot.poms.RemoveIfExists(channelID)
 }

@@ -17,7 +17,7 @@ func main() {
 	}
 
 	// Start bot
-	bot := coffeebeanbot.Bot{Config: *cfg}
+	bot := coffeebeanbot.NewBot(*cfg)
 	err = bot.Start()
 	if err != nil {
 		log.Printf("Error starting bot: %v", err)
