@@ -242,6 +242,8 @@ func (bot *Bot) onPomEnded(channelID string) {
 		if err == nil {
 			toMention = append(toMention, user.Mention())
 		}
+		// Doing this in a goroutine so we don't wait until the audio has been played to send the text notification.
+		// This isn't required, but is my preference.
 		go bot.playEndSound(*notif)
 	} else {
 		bot.discord.ChannelMessageSend(channelID, message)
