@@ -1,5 +1,7 @@
 package coffeebeanbot
 
+// Copyright 2017 Sean A. Pfeifer
+
 import (
 	"sync"
 	"time"

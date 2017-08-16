@@ -2,6 +2,8 @@
 // Its current focus is to handle "Pomodoro Technique"-style timeboxing notification.
 package coffeebeanbot
 
+// Copyright 2017 Sean A. Pfeifer
+
 import (
 	"bytes"
 	"encoding/json"
