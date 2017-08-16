@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	discordBotPrefix = "Bot "
-	pomDuration      = time.Minute * 25
-	voiceWaitTime    = time.Millisecond * 250 // The amount of time to sleep before speaking & leaving the voice channel
+	discordBotPrefix    = "Bot "
+	pomDuration         = time.Minute * 25
+	voiceWaitTime       = time.Millisecond * 250 // The amount of time to sleep before speaking & leaving the voice channel
+	baseAuthURLTemplate = "https://discordapp.com/api/oauth2/authorize?client_id=%s&scope=bot"
 )
 
 // cmdHandler is the type for our functions that will be called upon receiving commands from a user.
@@ -43,13 +44,15 @@ type Bot struct {
 	discord     *discordgo.Session
 
 	helpMessage        string
+	inviteMessage      string
 	poms               channelPomMap
 	workEndAudioBuffer [][]byte
 }
 
 // Config is the Bot's configuration data
 type Config struct {
-	AuthToken    string `json:"authToken"`
+	AuthToken    string `json:"authToken"` // AuthToken is all that we need to authenticate as the bot
+	ClientID     string `json:"clientID"`  // ClientID is used to create the invite link for the bot, and isn't necessary for login
 	CmdPrefix    string `json:"cmdPrefix"`
 	WorkEndAudio string `json:"workEndAudio"`
 }
@@ -78,6 +81,7 @@ func NewBot(config Config) *Bot {
 	}
 
 	bot.registerCmdHandlers()
+	bot.inviteMessage = fmt.Sprintf("To have me join your server, click here: <"+baseAuthURLTemplate+">", bot.Config.ClientID)
 	bot.helpMessage = bot.buildHelpMessage()
 	bot.loadSounds()
 
@@ -97,6 +101,7 @@ func (bot *Bot) registerCmdHandlers() {
 	bot.cmdHandlers = map[string]botCommand{
 		"ping":    {handler: bot.onCmdPing, desc: "Pings the bot to ensure it is currently running", exampleParams: ""},
 		"started": {handler: bot.onCmdStarted, desc: "Shows when the current version of the bot started running", exampleParams: ""},
+		"invite":  {handler: bot.onCmdInvite, desc: "Creates an invite link you can use to have the bot join your server", exampleParams: ""},
 		"echo":    {handler: bot.onCmdEcho, desc: "Echoes the given message back", exampleParams: "Hello, world!"},
 		"start":   {handler: bot.onCmdStartPom, desc: "Starts a Pomodoro work cycle on the channel", exampleParams: ""},
 		"cancel":  {handler: bot.onCmdCancelPom, desc: "Cancels the current Pomodoro work cycle on the channel", exampleParams: ""},
@@ -115,6 +120,8 @@ func (bot *Bot) buildHelpMessage() string {
 		helpBuf.WriteString(fmt.Sprintf("\n•  **%s**  -  %s\n", cmdStr, cmd.desc))
 		helpBuf.WriteString(fmt.Sprintf("    Example: `%s%s %s`\n", bot.Config.CmdPrefix, cmdStr, cmd.exampleParams))
 	}
+
+	helpBuf.WriteString("\n" + bot.inviteMessage)
 
 	return helpBuf.String()
 }
@@ -200,6 +207,10 @@ func (bot *Bot) onCmdEcho(s *discordgo.Session, m *discordgo.MessageCreate, extr
 
 func (bot *Bot) onCmdHelp(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
 	s.ChannelMessageSend(m.ChannelID, bot.helpMessage)
+}
+
+func (bot *Bot) onCmdInvite(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
+	s.ChannelMessageSend(m.ChannelID, bot.inviteMessage)
 }
 
 func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
