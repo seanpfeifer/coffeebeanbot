@@ -15,18 +15,27 @@ import (
 type Pomodoro struct {
 	WorkDuration time.Duration // The duration for a regular Pomodoro work cycle
 	OnWorkEnd    func()
+	NotifyInfo   NotifyInfo
 
 	cancelChan chan bool // A channel to interrupt our wait if this Pomodoro is cancelled first
 	cancel     sync.Once // To ensure we only close the cancelChan once
 }
 
+// NotifyInfo contains the necessary information to notify the creating user upon ending the Pomodoro.
+type NotifyInfo struct {
+	Title   string // The title of the work task
+	UserID  string // The UserID to notify
+	GuildID string // The Guild (Discord server) that the user created the Pomodoro on
+}
+
 // NewPomodoro creates a new Pomodoro and starts it, similar to time.NewTimer. "Start" functionality
 // is intentionally omitted to prevent double-starting.
 // onWorkEnd is called upon normal Pomodoro ending. NOTE: This does not include cancellation.
-func NewPomodoro(workDuration time.Duration, onWorkEnd func()) *Pomodoro {
+func NewPomodoro(workDuration time.Duration, onWorkEnd func(), notify NotifyInfo) *Pomodoro {
 	pom := &Pomodoro{
 		workDuration,
 		onWorkEnd,
+		notify,
 		make(chan bool),
 		sync.Once{},
 	}
@@ -67,13 +76,13 @@ func newChannelPomMap() channelPomMap {
 
 // CreateIfEmpty will create and start a Pomodoro on the given channel if one does not already exist.
 // This method is goroutine-safe.
-func (m *channelPomMap) CreateIfEmpty(channel string, duration time.Duration, onWorkEnd func()) bool {
+func (m *channelPomMap) CreateIfEmpty(channel string, duration time.Duration, onWorkEnd func(), notify NotifyInfo) bool {
 	m.Lock()
 	defer m.Unlock()
 
 	wasCreated := false
 	if _, exists := m.channelToPom[channel]; !exists {
-		m.channelToPom[channel] = NewPomodoro(duration, onWorkEnd)
+		m.channelToPom[channel] = NewPomodoro(duration, onWorkEnd, notify)
 		wasCreated = true
 	}
 
@@ -81,17 +90,18 @@ func (m *channelPomMap) CreateIfEmpty(channel string, duration time.Duration, on
 }
 
 // RemoveIfExists will stop and remove a Pomodoro from the given channel if one exists.
+// It returns the NotifyInfo for the channel, if the Pomodoro was removed.
 // This method is goroutine-safe.
-func (m *channelPomMap) RemoveIfExists(channel string) bool {
+func (m *channelPomMap) RemoveIfExists(channel string) *NotifyInfo {
 	m.Lock()
 	defer m.Unlock()
 
-	wasRemoved := false
+	var removed *NotifyInfo
 	if p, exists := m.channelToPom[channel]; exists {
 		p.Cancel()
 		delete(m.channelToPom, channel)
-		wasRemoved = true
+		removed = &p.NotifyInfo
 	}
 
-	return wasRemoved
+	return removed
 }

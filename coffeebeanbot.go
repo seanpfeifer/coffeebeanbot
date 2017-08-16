@@ -23,6 +23,7 @@ const (
 	cmdPrefix        = "!bb "
 	cmdPrefixLen     = len(cmdPrefix)
 	pomDuration      = time.Minute * 25
+	voiceWaitTime    = time.Millisecond * 250 // The amount of time to sleep before speaking & leaving the voice channel
 )
 
 // cmdHandler is the type for our functions that will be called upon receiving commands from a user.
@@ -41,13 +42,15 @@ type Bot struct {
 	cmdHandlers map[string]botCommand
 	discord     *discordgo.Session
 
-	helpMessage string
-	poms        channelPomMap
+	helpMessage        string
+	poms               channelPomMap
+	workEndAudioBuffer [][]byte
 }
 
 // Config is the Bot's configuration data
 type Config struct {
-	AuthToken string `json:"authToken"`
+	AuthToken    string `json:"authToken"`
+	WorkEndAudio string `json:"workEndAudio"`
 }
 
 // LoadConfigFile loads the config from the given path, returning the config or an error if one occurred.
@@ -75,8 +78,18 @@ func NewBot(config Config) *Bot {
 
 	bot.registerCmdHandlers()
 	bot.helpMessage = bot.buildHelpMessage()
+	bot.loadSounds()
 
 	return bot
+}
+
+func (bot *Bot) loadSounds() {
+	audioBuffer, err := LoadDiscordAudio(bot.Config.WorkEndAudio)
+	if err != nil {
+		log.Printf("Error loading audio: %v", err)
+	} else {
+		bot.workEndAudioBuffer = audioBuffer
+	}
 }
 
 func (bot *Bot) registerCmdHandlers() {
@@ -187,15 +200,29 @@ func (bot *Bot) onCmdHelp(s *discordgo.Session, m *discordgo.MessageCreate, extr
 }
 
 func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
-	if bot.poms.CreateIfEmpty(m.ChannelID, pomDuration, func() { bot.onPomEnded(m.ChannelID) }) {
-		s.ChannelMessageSend(m.ChannelID, "Pomodoro started!")
+	channel, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		// Could not find the channel, so simply log and exit
+		log.Printf("Could not find channel for ChannelID '%s'", m.ChannelID)
+		return
+	}
+
+	notif := NotifyInfo{
+		extra,
+		m.Author.ID,
+		channel.GuildID,
+	}
+
+	if bot.poms.CreateIfEmpty(m.ChannelID, pomDuration, func() { bot.onPomEnded(m.ChannelID) }, notif) {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Pomodoro started - **%.1f minutes** remaining!", pomDuration.Minutes()))
 	} else {
 		s.ChannelMessageSend(m.ChannelID, "A Pomodoro is already running on this channel.")
 	}
 }
 
 func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
-	if bot.poms.RemoveIfExists(m.ChannelID) {
+	if notif := bot.poms.RemoveIfExists(m.ChannelID); notif != nil {
+		// TODO: Use the NotifyInfo here?
 		s.ChannelMessageSend(m.ChannelID, "Pomodoro cancelled!")
 	} else {
 		s.ChannelMessageSend(m.ChannelID, "No Pomodoro running on this channel to cancel.")
@@ -204,6 +231,25 @@ func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate,
 
 // onPomEnded performs the notification
 func (bot *Bot) onPomEnded(channelID string) {
-	bot.discord.ChannelMessageSend(channelID, "Pomodoro ended!")
-	bot.poms.RemoveIfExists(channelID)
+	notif := bot.poms.RemoveIfExists(channelID)
+	message := "Pomodoro ended.  Time for a short break!"
+
+	var toMention []string
+
+	if notif != nil {
+		user, err := bot.discord.User(notif.UserID)
+		if err == nil {
+			toMention = append(toMention, user.Mention())
+		}
+		go bot.playEndSound(*notif)
+	} else {
+		bot.discord.ChannelMessageSend(channelID, message)
+	}
+
+	if len(toMention) > 0 {
+		mentions := strings.Join(toMention, " ")
+		bot.discord.ChannelMessageSend(channelID, fmt.Sprintf("%s %s", message, mentions))
+	} else {
+		bot.discord.ChannelMessageSend(channelID, message)
+	}
 }
