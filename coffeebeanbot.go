@@ -20,8 +20,6 @@ import (
 
 const (
 	discordBotPrefix = "Bot "
-	cmdPrefix        = "!bb "
-	cmdPrefixLen     = len(cmdPrefix)
 	pomDuration      = time.Minute * 25
 	voiceWaitTime    = time.Millisecond * 250 // The amount of time to sleep before speaking & leaving the voice channel
 )
@@ -50,6 +48,7 @@ type Bot struct {
 // Config is the Bot's configuration data
 type Config struct {
 	AuthToken    string `json:"authToken"`
+	CmdPrefix    string `json:"cmdPrefix"`
 	WorkEndAudio string `json:"workEndAudio"`
 }
 
@@ -112,7 +111,7 @@ func (bot *Bot) buildHelpMessage() string {
 	// TODO: Add a "group" attribute to the commands, and sort by group, then command.
 	for cmdStr, cmd := range bot.cmdHandlers {
 		helpBuf.WriteString(fmt.Sprintf("\n•  **%s**  -  %s\n", cmdStr, cmd.desc))
-		helpBuf.WriteString(fmt.Sprintf("    Example: `%s%s %s`\n", cmdPrefix, cmdStr, cmd.exampleParams))
+		helpBuf.WriteString(fmt.Sprintf("    Example: `%s%s %s`\n", bot.Config.CmdPrefix, cmdStr, cmd.exampleParams))
 	}
 
 	return helpBuf.String()
@@ -160,8 +159,10 @@ func (bot *Bot) onMessageReceived(s *discordgo.Session, m *discordgo.MessageCrea
 
 	msg := m.Content
 
+	cmdPrefixLen := len(bot.Config.CmdPrefix)
+
 	// Dispatch the command iff we have our prefix (case-insensitive).
-	if len(msg) > cmdPrefixLen && cmdPrefix == strings.ToLower(msg[0:cmdPrefixLen]) {
+	if len(msg) > cmdPrefixLen && strings.EqualFold(bot.Config.CmdPrefix, msg[0:cmdPrefixLen]) {
 		afterPrefix := msg[cmdPrefixLen:]
 		cmd := strings.SplitN(afterPrefix, " ", 2)
 
