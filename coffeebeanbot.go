@@ -39,7 +39,6 @@ type botCommand struct {
 // Bot contains the information needed to run the Discord bot
 type Bot struct {
 	Config      Config
-	started     time.Time
 	cmdHandlers map[string]botCommand
 	discord     *discordgo.Session
 
@@ -99,13 +98,10 @@ func (bot *Bot) loadSounds() {
 
 func (bot *Bot) registerCmdHandlers() {
 	bot.cmdHandlers = map[string]botCommand{
-		"ping":    {handler: bot.onCmdPing, desc: "Pings the bot to ensure it is currently running", exampleParams: ""},
-		"started": {handler: bot.onCmdStarted, desc: "Shows when the current version of the bot started running", exampleParams: ""},
-		"invite":  {handler: bot.onCmdInvite, desc: "Creates an invite link you can use to have the bot join your server", exampleParams: ""},
-		"echo":    {handler: bot.onCmdEcho, desc: "Echoes the given message back", exampleParams: "Hello, world!"},
-		"start":   {handler: bot.onCmdStartPom, desc: "Starts a Pomodoro work cycle on the channel", exampleParams: ""},
-		"cancel":  {handler: bot.onCmdCancelPom, desc: "Cancels the current Pomodoro work cycle on the channel", exampleParams: ""},
-		"help":    {handler: bot.onCmdHelp, desc: "Shows this help message", exampleParams: ""},
+		"invite": {handler: bot.onCmdInvite, desc: "Creates an invite link you can use to have the bot join your server", exampleParams: ""},
+		"start":  {handler: bot.onCmdStartPom, desc: "Starts a Pomodoro work cycle on the channel. You can optionally specify the task you are working on", exampleParams: "Create a new notification sound, add an example"},
+		"cancel": {handler: bot.onCmdCancelPom, desc: "Cancels the current Pomodoro work cycle on the channel", exampleParams: ""},
+		"help":   {handler: bot.onCmdHelp, desc: "Shows this help message", exampleParams: ""},
 	}
 }
 
@@ -154,7 +150,6 @@ func (bot *Bot) Start() error {
 }
 
 func (bot *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
-	bot.started = time.Now()
 	log.Printf("Bot connected and ready as '%s#%s'!", event.User.Username, event.User.Discriminator)
 }
 
@@ -191,20 +186,6 @@ func (bot *Bot) onMessageReceived(s *discordgo.Session, m *discordgo.MessageCrea
 	}
 }
 
-func (bot *Bot) onCmdPing(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
-	s.ChannelMessageSend(m.ChannelID, "Pong!")
-}
-
-func (bot *Bot) onCmdStarted(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
-	s.ChannelMessageSend(m.ChannelID, "I started "+bot.started.String())
-}
-
-func (bot *Bot) onCmdEcho(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
-	// Make sure the echoed text can't break out of our quote box.
-	extra = strings.Replace(extra, "`", "", -1)
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Echo:  `%s`", extra))
-}
-
 func (bot *Bot) onCmdHelp(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
 	s.ChannelMessageSend(m.ChannelID, bot.helpMessage)
 }
@@ -221,6 +202,9 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 		return
 	}
 
+	// Make sure the user's text can't break out of our quote box.
+	extra = strings.Replace(extra, "`", "", -1)
+
 	notif := NotifyInfo{
 		extra,
 		m.Author.ID,
@@ -228,7 +212,12 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 	}
 
 	if bot.poms.CreateIfEmpty(m.ChannelID, pomDuration, func() { bot.onPomEnded(m.ChannelID) }, notif) {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Pomodoro started - **%.1f minutes** remaining!", pomDuration.Minutes()))
+		taskStr := "Started task"
+		if len(notif.Title) > 0 {
+			taskStr = fmt.Sprintf("`%s`", notif.Title)
+		}
+		msg := fmt.Sprintf("%s  -  **%.1f minutes** remaining!", taskStr, pomDuration.Minutes())
+		s.ChannelMessageSend(m.ChannelID, msg)
 	} else {
 		s.ChannelMessageSend(m.ChannelID, "A Pomodoro is already running on this channel.")
 	}
@@ -246,11 +235,16 @@ func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate,
 // onPomEnded performs the notification
 func (bot *Bot) onPomEnded(channelID string) {
 	notif := bot.poms.RemoveIfExists(channelID)
-	message := "Pomodoro ended.  Time for a short break!"
+	message := "Pomodoro ended.\n"
+	messageSuffix := "Time for a short break!"
 
 	var toMention []string
 
 	if notif != nil {
+		if len(notif.Title) > 0 {
+			message = fmt.Sprintf("`%s` work cycle complete.\n", notif.Title)
+		}
+
 		user, err := bot.discord.User(notif.UserID)
 		if err == nil {
 			toMention = append(toMention, user.Mention())
@@ -258,14 +252,15 @@ func (bot *Bot) onPomEnded(channelID string) {
 		// Doing this in a goroutine so we don't wait until the audio has been played to send the text notification.
 		// This isn't required, but is my preference.
 		go bot.playEndSound(*notif)
-	} else {
-		bot.discord.ChannelMessageSend(channelID, message)
-	}
 
-	if len(toMention) > 0 {
-		mentions := strings.Join(toMention, " ")
-		bot.discord.ChannelMessageSend(channelID, fmt.Sprintf("%s %s", message, mentions))
-	} else {
-		bot.discord.ChannelMessageSend(channelID, message)
+		messageBody := message + messageSuffix
+
+		if len(toMention) > 0 {
+			mentions := strings.Join(toMention, " ")
+			messageBody = fmt.Sprintf("%s\n%s", messageBody, mentions)
+		}
+
+		bot.discord.ChannelMessageSend(channelID, messageBody)
 	}
+	// If we don't have a NotifInfo value, then the task was cancelled before we were called, so don't notify
 }
