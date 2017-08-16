@@ -38,6 +38,11 @@ func findUserVoiceChannelID(s *discordgo.Session, guildID, userID string) string
 }
 
 func playSound(s *discordgo.Session, guildID, channelID string, audioBuffer [][]byte) error {
+	// Simply don't play the audio if the buffer is nil.
+	if audioBuffer == nil {
+		return nil
+	}
+
 	voice, err := s.ChannelVoiceJoin(guildID, channelID, false, true)
 	if err != nil {
 		return err
