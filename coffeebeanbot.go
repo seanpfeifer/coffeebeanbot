@@ -22,7 +22,7 @@ import (
 
 const (
 	discordBotPrefix    = "Bot "
-	pomDuration         = time.Minute * 25
+	pomDuration         = time.Second * 25
 	voiceWaitTime       = time.Millisecond * 250 // The amount of time to sleep before speaking & leaving the voice channel
 	baseAuthURLTemplate = "https://discordapp.com/api/oauth2/authorize?client_id=%s&scope=bot"
 )
@@ -204,6 +204,7 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 
 	// Make sure the user's text can't break out of our quote box.
 	extra = strings.Replace(extra, "`", "", -1)
+	extra = strings.TrimSpace(extra)
 
 	notif := NotifyInfo{
 		extra,
@@ -212,11 +213,12 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 	}
 
 	if bot.poms.CreateIfEmpty(m.ChannelID, pomDuration, func() { bot.onPomEnded(m.ChannelID) }, notif) {
-		taskStr := "Started task"
+		taskStr := "Started task  -  "
 		if len(notif.Title) > 0 {
-			taskStr = fmt.Sprintf("`%s`", notif.Title)
+			taskStr = fmt.Sprintf("```md\n%s\n```", notif.Title)
 		}
-		msg := fmt.Sprintf("%s  -  **%.1f minutes** remaining!", taskStr, pomDuration.Minutes())
+
+		msg := fmt.Sprintf("%s**%.1f minutes** remaining!", taskStr, pomDuration.Minutes())
 		s.ChannelMessageSend(m.ChannelID, msg)
 	} else {
 		s.ChannelMessageSend(m.ChannelID, "A Pomodoro is already running on this channel.")
@@ -235,14 +237,13 @@ func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate,
 // onPomEnded performs the notification
 func (bot *Bot) onPomEnded(channelID string) {
 	notif := bot.poms.RemoveIfExists(channelID)
-	message := "Pomodoro ended.\n"
-	messageSuffix := "Time for a short break!"
+	message := "Work cycle complete.  Time for a short break!"
 
 	var toMention []string
 
 	if notif != nil {
 		if len(notif.Title) > 0 {
-			message = fmt.Sprintf("`%s` work cycle complete.\n", notif.Title)
+			message = fmt.Sprintf("```md\n%s\n```%s", notif.Title, message)
 		}
 
 		user, err := bot.discord.User(notif.UserID)
@@ -253,14 +254,12 @@ func (bot *Bot) onPomEnded(channelID string) {
 		// This isn't required, but is my preference.
 		go bot.playEndSound(*notif)
 
-		messageBody := message + messageSuffix
-
 		if len(toMention) > 0 {
 			mentions := strings.Join(toMention, " ")
-			messageBody = fmt.Sprintf("%s\n%s", messageBody, mentions)
+			message = fmt.Sprintf("%s\n%s", message, mentions)
 		}
 
-		bot.discord.ChannelMessageSend(channelID, messageBody)
+		bot.discord.ChannelMessageSend(channelID, message)
 	}
 	// If we don't have a NotifInfo value, then the task was cancelled before we were called, so don't notify
 }
