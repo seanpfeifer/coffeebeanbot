@@ -22,7 +22,7 @@ import (
 
 const (
 	discordBotPrefix    = "Bot "
-	pomDuration         = time.Second * 25
+	pomDuration         = time.Minute * 25
 	voiceWaitTime       = time.Millisecond * 250 // The amount of time to sleep before speaking & leaving the voice channel
 	baseAuthURLTemplate = "https://discordapp.com/api/oauth2/authorize?client_id=%s&scope=bot"
 )
