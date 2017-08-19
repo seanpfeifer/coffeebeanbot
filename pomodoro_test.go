@@ -116,8 +116,7 @@ func TestPomMapRemove(t *testing.T) {
 	failChan := "Doesn't Exist"
 	createdChan := "Does Exist"
 
-	info := cpm.RemoveIfExists(failChan)
-	if info != nil {
+	if info, exists := cpm.RemoveIfExists(failChan); exists {
 		t.Errorf("Expected nil NotifyInfo, actual %v", info)
 	}
 
@@ -135,21 +134,21 @@ func TestPomMapRemove(t *testing.T) {
 	}
 
 	// Ensure we still don't have this failChan
-	if info = cpm.RemoveIfExists(failChan); info != nil {
+	if info, exists := cpm.RemoveIfExists(failChan); exists {
 		t.Errorf("Expected nil NotifyInfo, actual %v", info)
 	}
 
 	// Remove the one that was added
-	if info = cpm.RemoveIfExists(createdChan); info != nil {
-		if createdInfo != *info {
-			t.Errorf("Did not receive expected NotifyInfo. Expected %v. Actual %v.", createdInfo, *info)
+	if info, exists := cpm.RemoveIfExists(createdChan); exists {
+		if createdInfo != info {
+			t.Errorf("Did not receive expected NotifyInfo. Expected %v. Actual %v.", createdInfo, info)
 		}
 	} else {
 		t.Errorf("Expected non-nil NotifyInfo")
 	}
 
 	// Ensure it was removed
-	if info = cpm.RemoveIfExists(createdChan); info != nil {
+	if info, exists := cpm.RemoveIfExists(createdChan); exists {
 		t.Errorf("Expected nil NotifyInfo, actual %v", info)
 	}
 }

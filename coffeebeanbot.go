@@ -226,7 +226,7 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 }
 
 func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
-	if notif := bot.poms.RemoveIfExists(m.ChannelID); notif != nil {
+	if _, exists := bot.poms.RemoveIfExists(m.ChannelID); exists {
 		// TODO: Use the NotifyInfo here?
 		s.ChannelMessageSend(m.ChannelID, "Pomodoro cancelled!")
 	} else {
@@ -236,12 +236,10 @@ func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate,
 
 // onPomEnded performs the notification
 func (bot *Bot) onPomEnded(channelID string) {
-	notif := bot.poms.RemoveIfExists(channelID)
-	message := "Work cycle complete.  Time for a short break!"
+	if notif, exists := bot.poms.RemoveIfExists(channelID); exists {
+		message := "Work cycle complete.  Time for a short break!"
+		var toMention []string
 
-	var toMention []string
-
-	if notif != nil {
 		if len(notif.Title) > 0 {
 			message = fmt.Sprintf("```md\n%s\n```%s", notif.Title, message)
 		}
@@ -252,7 +250,7 @@ func (bot *Bot) onPomEnded(channelID string) {
 		}
 		// Doing this in a goroutine so we don't wait until the audio has been played to send the text notification.
 		// This isn't required, but is my preference.
-		go bot.playEndSound(*notif)
+		go bot.playEndSound(notif)
 
 		if len(toMention) > 0 {
 			mentions := strings.Join(toMention, " ")

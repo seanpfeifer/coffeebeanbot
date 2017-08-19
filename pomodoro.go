@@ -92,18 +92,20 @@ func (m *channelPomMap) CreateIfEmpty(channel string, duration time.Duration, on
 }
 
 // RemoveIfExists will stop and remove a Pomodoro from the given channel if one exists.
-// It returns the NotifyInfo for the channel, if the Pomodoro was removed.
+// It returns the NotifyInfo for the channel if the Pomodoro was removed, and a
 // This method is goroutine-safe.
-func (m *channelPomMap) RemoveIfExists(channel string) *NotifyInfo {
+func (m *channelPomMap) RemoveIfExists(channel string) (NotifyInfo, bool) {
 	m.Lock()
 	defer m.Unlock()
 
-	var removed *NotifyInfo
+	wasRemoved := false
+	var notify NotifyInfo
 	if p, exists := m.channelToPom[channel]; exists {
 		p.Cancel()
 		delete(m.channelToPom, channel)
-		removed = &p.NotifyInfo
+		notify = p.NotifyInfo
+		wasRemoved = true
 	}
 
-	return removed
+	return notify, wasRemoved
 }
