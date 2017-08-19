@@ -50,10 +50,10 @@ type Bot struct {
 
 // Config is the Bot's configuration data
 type Config struct {
-	AuthToken    string `json:"authToken"` // AuthToken is all that we need to authenticate as the bot
-	ClientID     string `json:"clientID"`  // ClientID is used to create the invite link for the bot, and isn't necessary for login
-	CmdPrefix    string `json:"cmdPrefix"`
-	WorkEndAudio string `json:"workEndAudio"`
+	AuthToken    string `json:"authToken"`    // AuthToken is all that we need to authenticate with Discord as the bot's user
+	ClientID     string `json:"clientID"`     // Used to create the invite link for the bot - this isn't necessary for Discord login
+	CmdPrefix    string `json:"cmdPrefix"`    // The prefix the bot will look for in chat before all known commands
+	WorkEndAudio string `json:"workEndAudio"` // The DCA audio file that will be played when a Pomodoro ends. This is only played if the user is in voice chat in the Discord Server (Guild).
 }
 
 // LoadConfigFile loads the config from the given path, returning the config or an error if one occurred.
