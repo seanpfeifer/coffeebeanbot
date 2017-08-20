@@ -1,4 +1,4 @@
-package coffeebeanbot
+package pomodoro
 
 // Copyright 2017 Sean A. Pfeifer
 

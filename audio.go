@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/seanpfeifer/coffeebeanbot/pomodoro"
 )
 
-func (bot *Bot) playEndSound(notif NotifyInfo) error {
+func (bot *Bot) playEndSound(notif pomodoro.NotifyInfo) error {
 	// Find the user in the voice chat for the guild
 	voiceChannelID := findUserVoiceChannelID(bot.discord, notif.GuildID, notif.UserID)
 	if voiceChannelID == "" {

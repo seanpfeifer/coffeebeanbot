@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/seanpfeifer/coffeebeanbot/pomodoro"
 )
 
 const (
@@ -44,7 +45,7 @@ type Bot struct {
 
 	helpMessage        string
 	inviteMessage      string
-	poms               ChannelPomMap
+	poms               pomodoro.ChannelPomMap
 	workEndAudioBuffer [][]byte
 }
 
@@ -76,7 +77,7 @@ func LoadConfigFile(path string) (*Config, error) {
 func NewBot(config Config) *Bot {
 	bot := &Bot{
 		Config: config,
-		poms:   NewChannelPomMap(),
+		poms:   pomodoro.NewChannelPomMap(),
 	}
 
 	bot.registerCmdHandlers()
@@ -206,7 +207,7 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 	extra = strings.Replace(extra, "`", "", -1)
 	extra = strings.TrimSpace(extra)
 
-	notif := NotifyInfo{
+	notif := pomodoro.NotifyInfo{
 		extra,
 		m.Author.ID,
 		channel.GuildID,
@@ -234,7 +235,7 @@ func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate,
 }
 
 // onPomEnded performs the notification
-func (bot *Bot) onPomEnded(notif NotifyInfo, completed bool) {
+func (bot *Bot) onPomEnded(notif pomodoro.NotifyInfo, completed bool) {
 	if completed {
 		message := "Work cycle complete.  Time for a short break!"
 		var toMention []string
