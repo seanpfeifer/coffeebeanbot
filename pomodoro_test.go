@@ -11,14 +11,17 @@ import (
 func TestPomodoro(t *testing.T) {
 	const testDuration = time.Millisecond * 42
 	c := make(chan bool)
-	testFunc := func() {
-		c <- true
+	testFunc := func(_ NotifyInfo, completed bool) {
+		c <- completed
 	}
 
 	startTime := time.Now()
 	// Intentionally not using the returned Pomodoro - no need for it
 	NewPomodoro(testDuration, testFunc, NotifyInfo{})
-	<-c
+	completed := <-c
+	if !completed {
+		t.Error("Expected successful completion, received cancellation.")
+	}
 	endDuration := time.Since(startTime)
 
 	const tolerance = time.Millisecond * 2
@@ -31,8 +34,9 @@ func TestPomodoro(t *testing.T) {
 func TestPomodoroCancel(t *testing.T) {
 	const testDuration = time.Millisecond * 100
 	const cancelDuration = time.Millisecond * 10
-	testFunc := func() {
-		t.Error("Executed testFunc when Pomodoro should have been cancelled!")
+	c := make(chan bool)
+	testFunc := func(_ NotifyInfo, completed bool) {
+		c <- completed
 	}
 
 	startTime := time.Now()
@@ -41,9 +45,11 @@ func TestPomodoroCancel(t *testing.T) {
 		time.Sleep(cancelDuration)
 		pom.Cancel()
 	}()
-	// Cancel SHOULD cause this to close, which would stop our timer.
-	// Note: At this point we're dealing with the internals of the Pomodoro.
-	<-pom.cancelChan
+
+	completed := <-c
+	if completed {
+		t.Error("Expected cancellation, received successful completion.")
+	}
 	endDuration := time.Since(startTime)
 
 	const tolerance = time.Millisecond * 2
@@ -54,29 +60,28 @@ func TestPomodoroCancel(t *testing.T) {
 }
 
 func TestPomMapCreate(t *testing.T) {
-	cpm := newChannelPomMap()
+	cpm := NewChannelPomMap()
 	if cpm.channelToPom == nil {
 		t.Fatal("Expected non-nil map")
 	}
 
 	type pomTestCase struct {
-		channel       string
 		duration      time.Duration
 		notify        NotifyInfo
 		shouldSucceed bool
 	}
 	cases := []pomTestCase{
-		{"TheChannel", time.Millisecond * 42, NotifyInfo{}, true},
-		{"TheChannel", time.Millisecond * 42, NotifyInfo{}, false},
-		{"TheChannel2", time.Millisecond * 42, NotifyInfo{}, true},
-		{"TheChannel2", time.Millisecond * 42, NotifyInfo{}, false},
+		{time.Millisecond * 42, NotifyInfo{ChannelID: "TheChannel"}, true},
+		{time.Millisecond * 42, NotifyInfo{ChannelID: "TheChannel"}, false},
+		{time.Millisecond * 42, NotifyInfo{ChannelID: "TheChannel2"}, true},
+		{time.Millisecond * 42, NotifyInfo{ChannelID: "TheChannel2"}, false},
 	}
 	var wg sync.WaitGroup
 	wg.Add(len(cases))
 
 	startTime := time.Now()
 
-	onFinish := func(index int) {
+	onFinish := func(index int, info NotifyInfo, success bool) {
 		defer wg.Done()
 
 		endDuration := time.Since(startTime)
@@ -84,15 +89,23 @@ func TestPomMapCreate(t *testing.T) {
 		const tolerance = time.Millisecond * 2
 		delta := endDuration - cases[index].duration
 		if delta > tolerance {
-			t.Errorf("Failed to end Pomodoro %d in time. Expected '%s'. Received '%s'",
+			t.Errorf("[%d] Failed to end Pomodoro in time. Expected '%s'. Received '%s'",
 				index, cases[index].duration, endDuration)
+		}
+
+		if !success {
+			t.Errorf("[%d] Expected success, received cancellation.", index)
+		}
+
+		if info != cases[index].notify {
+			t.Errorf("[%d] Expected correct NotifyInfo %v. Actual %v.", index, cases[index].notify, info)
 		}
 	}
 
 	for i := range cases {
 		// Local variable to prevent data race issues with the onFinish() call below
 		idx := i
-		created := cpm.CreateIfEmpty(cases[i].channel, cases[i].duration, func() { onFinish(idx) }, cases[i].notify)
+		created := cpm.CreateIfEmpty(cases[i].duration, func(info NotifyInfo, completed bool) { onFinish(idx, info, completed) }, cases[i].notify)
 
 		if created != cases[i].shouldSucceed {
 			t.Errorf("Did not receive expected creation result for test case %d: Expected %t. Actual %t.",
@@ -108,7 +121,7 @@ func TestPomMapCreate(t *testing.T) {
 }
 
 func TestPomMapRemove(t *testing.T) {
-	cpm := newChannelPomMap()
+	cpm := NewChannelPomMap()
 	if cpm.channelToPom == nil {
 		t.Fatal("Expected non-nil map")
 	}
@@ -116,39 +129,41 @@ func TestPomMapRemove(t *testing.T) {
 	failChan := "Doesn't Exist"
 	createdChan := "Does Exist"
 
-	if info, exists := cpm.RemoveIfExists(failChan); exists {
-		t.Errorf("Expected nil NotifyInfo, actual %v", info)
+	if exists := cpm.RemoveIfExists(failChan); exists {
+		t.Errorf("Expected false. Actual true.")
 	}
 
 	createdInfo := NotifyInfo{
-		Title:   "Some title here",
-		UserID:  "SomeID",
-		GuildID: "SomeGuild",
+		Title:     "Some title here",
+		UserID:    "SomeID",
+		GuildID:   "SomeGuild",
+		ChannelID: createdChan,
 	}
-	onFinish := func() {
-		t.Error("Should not have called onFinish, as this task should be cancelled.")
+	onFinish := func(info NotifyInfo, completed bool) {
+		if completed {
+			t.Error("Expected cancellation, received successful completion.")
+		}
+		if info != createdInfo {
+			t.Errorf("Expected correct NotifyInfo %v. Actual %v.", createdInfo, info)
+		}
 	}
 
-	if !cpm.CreateIfEmpty(createdChan, time.Millisecond*300, onFinish, createdInfo) {
+	if !cpm.CreateIfEmpty(time.Millisecond*300, onFinish, createdInfo) {
 		t.Fatal("Failed to create valid task")
 	}
 
 	// Ensure we still don't have this failChan
-	if info, exists := cpm.RemoveIfExists(failChan); exists {
-		t.Errorf("Expected nil NotifyInfo, actual %v", info)
+	if exists := cpm.RemoveIfExists(failChan); exists {
+		t.Errorf("Expected false. Actual true.")
 	}
 
 	// Remove the one that was added
-	if info, exists := cpm.RemoveIfExists(createdChan); exists {
-		if createdInfo != info {
-			t.Errorf("Did not receive expected NotifyInfo. Expected %v. Actual %v.", createdInfo, info)
-		}
-	} else {
-		t.Errorf("Expected non-nil NotifyInfo")
+	if exists := cpm.RemoveIfExists(createdChan); !exists {
+		t.Error("Expected removed Pomodoro.")
 	}
 
 	// Ensure it was removed
-	if info, exists := cpm.RemoveIfExists(createdChan); exists {
-		t.Errorf("Expected nil NotifyInfo, actual %v", info)
+	if exists := cpm.RemoveIfExists(createdChan); exists {
+		t.Errorf("Expected false. Actual true.")
 	}
 }

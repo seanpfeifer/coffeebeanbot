@@ -44,7 +44,7 @@ type Bot struct {
 
 	helpMessage        string
 	inviteMessage      string
-	poms               channelPomMap
+	poms               ChannelPomMap
 	workEndAudioBuffer [][]byte
 }
 
@@ -76,7 +76,7 @@ func LoadConfigFile(path string) (*Config, error) {
 func NewBot(config Config) *Bot {
 	bot := &Bot{
 		Config: config,
-		poms:   newChannelPomMap(),
+		poms:   NewChannelPomMap(),
 	}
 
 	bot.registerCmdHandlers()
@@ -210,9 +210,10 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 		extra,
 		m.Author.ID,
 		channel.GuildID,
+		m.ChannelID,
 	}
 
-	if bot.poms.CreateIfEmpty(m.ChannelID, pomDuration, func() { bot.onPomEnded(m.ChannelID) }, notif) {
+	if bot.poms.CreateIfEmpty(pomDuration, bot.onPomEnded, notif) {
 		taskStr := "Started task  -  "
 		if len(notif.Title) > 0 {
 			taskStr = fmt.Sprintf("```md\n%s\n```", notif.Title)
@@ -226,17 +227,15 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 }
 
 func (bot *Bot) onCmdCancelPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
-	if _, exists := bot.poms.RemoveIfExists(m.ChannelID); exists {
-		// TODO: Use the NotifyInfo here?
-		s.ChannelMessageSend(m.ChannelID, "Pomodoro cancelled!")
-	} else {
+	if exists := bot.poms.RemoveIfExists(m.ChannelID); !exists {
 		s.ChannelMessageSend(m.ChannelID, "No Pomodoro running on this channel to cancel.")
 	}
+	// If this removal succeeds, then the onPomEnded callback will be called, so we don't need to do anything here.
 }
 
 // onPomEnded performs the notification
-func (bot *Bot) onPomEnded(channelID string) {
-	if notif, exists := bot.poms.RemoveIfExists(channelID); exists {
+func (bot *Bot) onPomEnded(notif NotifyInfo, completed bool) {
+	if completed {
 		message := "Work cycle complete.  Time for a short break!"
 		var toMention []string
 
@@ -257,7 +256,8 @@ func (bot *Bot) onPomEnded(channelID string) {
 			message = fmt.Sprintf("%s\n%s", message, mentions)
 		}
 
-		bot.discord.ChannelMessageSend(channelID, message)
+		bot.discord.ChannelMessageSend(notif.ChannelID, message)
+	} else {
+		bot.discord.ChannelMessageSend(notif.ChannelID, "Pomodoro cancelled!")
 	}
-	// If we don't have a NotifInfo value, then the task was cancelled before we were called, so don't notify
 }

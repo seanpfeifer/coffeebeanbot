@@ -17,27 +17,33 @@ import (
 // I chose the channel option.  This was to avoid the risks of issues related to locking (user error), as well as
 // generally to make it more idiomatic Go.
 type Pomodoro struct {
-	WorkDuration time.Duration // The duration for a regular Pomodoro work cycle
-	OnWorkEnd    func()
-	NotifyInfo   NotifyInfo
+	workDuration time.Duration // The duration for a regular Pomodoro work cycle
+	onWorkEnd    PomodoroCallback
+	notifyInfo   NotifyInfo
 
 	cancelChan chan bool // A channel to interrupt our wait if this Pomodoro is cancelled first
 	cancel     sync.Once // To ensure we only close the cancelChan once
 }
 
+// PomodoroCallback is the type of function that will be called upon Pomodoro task completion.  These may be called in a separate
+// goroutine, and thus should be made goroutine-safe.
+//
+// It receives the NotifyInfo and a boolean to tell the receiver whether the task completed (true), or was cancelled (false).
+type PomodoroCallback func(info NotifyInfo, completed bool)
+
 // NotifyInfo contains the necessary information to notify the creating user upon ending the Pomodoro.
 type NotifyInfo struct {
-	Title   string // The title of the work task
-	UserID  string // The UserID to notify
-	GuildID string // The Guild (Discord server) that the user created the Pomodoro on
+	Title     string // The title of the work task
+	UserID    string // The UserID to notify
+	GuildID   string // The Guild (Discord server) that the user created the Pomodoro on
+	ChannelID string // The Channel to notify with the state of the Pomodoro
 }
 
 // NewPomodoro creates a new Pomodoro and starts it, similar to time.NewTimer. "Start" functionality
 // is intentionally omitted to prevent double-starting.
 //
-// onWorkEnd is called upon normal Pomodoro ending. NOTE: If Cancel() is called before the work duration expires
-// then onWorkEnd will not be called.
-func NewPomodoro(workDuration time.Duration, onWorkEnd func(), notify NotifyInfo) *Pomodoro {
+// onWorkEnd is called after the Pomodoro has been completed or cancelled.
+func NewPomodoro(workDuration time.Duration, onWorkEnd PomodoroCallback, notify NotifyInfo) *Pomodoro {
 	pom := &Pomodoro{
 		workDuration,
 		onWorkEnd,
@@ -52,8 +58,7 @@ func NewPomodoro(workDuration time.Duration, onWorkEnd func(), notify NotifyInfo
 }
 
 // Cancel is used to cancel a current work cycle. This uses "sync.Once" so we prevent a panic if, for whatever
-// reason, the caller is able to call Cancel more than once.  This will prevent OnWorkEnd from being called if
-// the work duration has not yet expired.
+// reason, the caller is able to call Cancel more than once.
 //
 // This method is goroutine-safe, and will cancel a Pomodoro only once (multiple calls are OK).
 func (pom *Pomodoro) Cancel() {
@@ -63,59 +68,69 @@ func (pom *Pomodoro) Cancel() {
 }
 
 func (pom *Pomodoro) performPom() {
-	workTimer := time.NewTimer(pom.WorkDuration)
+	workTimer := time.NewTimer(pom.workDuration)
 
 	select {
 	case <-workTimer.C:
-		pom.OnWorkEnd()
+		go pom.onWorkEnd(pom.notifyInfo, true)
 	case <-pom.cancelChan:
 		workTimer.Stop()
+		go pom.onWorkEnd(pom.notifyInfo, false)
 	}
 }
 
-// channelPomMap is a map-like structure that has goroutine-safe operations to create Pomodoros on individual channels.
-type channelPomMap struct {
+// ChannelPomMap is a map-like structure that has goroutine-safe operations to create Pomodoros on individual channels.
+type ChannelPomMap struct {
 	sync.Mutex
 	channelToPom map[string]*Pomodoro
 }
 
-func newChannelPomMap() channelPomMap {
-	return channelPomMap{channelToPom: make(map[string]*Pomodoro)}
+// NewChannelPomMap creates a ChannelPomMap and prepares it to be used.
+func NewChannelPomMap() ChannelPomMap {
+	return ChannelPomMap{channelToPom: make(map[string]*Pomodoro)}
 }
 
 // CreateIfEmpty will create and start a Pomodoro on the given channel if one does not already exist.
+// The Pomodoro will be removed from the map when its work is complete, or it is cancelled.
 //
 // This method is goroutine-safe.
-func (m *channelPomMap) CreateIfEmpty(channel string, duration time.Duration, onWorkEnd func(), notify NotifyInfo) bool {
+func (m *ChannelPomMap) CreateIfEmpty(duration time.Duration, onWorkEnd PomodoroCallback, notify NotifyInfo) bool {
 	m.Lock()
 	defer m.Unlock()
 
 	wasCreated := false
-	if _, exists := m.channelToPom[channel]; !exists {
-		m.channelToPom[channel] = NewPomodoro(duration, onWorkEnd, notify)
+	if _, exists := m.channelToPom[notify.ChannelID]; !exists {
+		// Ensure we remove the Pomodoro from the map when it completes
+		doneInMap := func(notif NotifyInfo, completed bool) {
+			// Note that this call is done so we use the mutex. The cancellation will never trigger "onWorkEnd", since the "performPom"
+			// goroutine will already be complete by this point.
+			m.RemoveIfExists(notif.ChannelID)
+			onWorkEnd(notif, completed)
+		}
+
+		m.channelToPom[notify.ChannelID] = NewPomodoro(duration, doneInMap, notify)
 		wasCreated = true
 	}
 
 	return wasCreated
 }
 
-// RemoveIfExists will stop and remove a Pomodoro from the given channel if one exists.
-// It returns the NotifyInfo for the channel if the Pomodoro was removed, and a boolean representing whether
-// the Pomodoro was removed.
+// RemoveIfExists will stop and remove a Pomodoro from the given channel if one exists.  Note that this will perform cancellation of
+// the Pomodoro if it is running and call the onWorkEnded callback.
+//
+// It returns a boolean representing whether the Pomodoro was removed.
 //
 // This method is goroutine-safe.
-func (m *channelPomMap) RemoveIfExists(channel string) (NotifyInfo, bool) {
+func (m *ChannelPomMap) RemoveIfExists(channel string) bool {
 	m.Lock()
 	defer m.Unlock()
 
 	wasRemoved := false
-	var notify NotifyInfo
 	if p, exists := m.channelToPom[channel]; exists {
-		p.Cancel()
 		delete(m.channelToPom, channel)
-		notify = p.NotifyInfo
+		p.Cancel()
 		wasRemoved = true
 	}
 
-	return notify, wasRemoved
+	return wasRemoved
 }
