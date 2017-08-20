@@ -1,5 +1,7 @@
 package pomodoro_test
 
+// Copyright 2017 Sean A. Pfeifer
+
 import (
 	"fmt"
 	"time"

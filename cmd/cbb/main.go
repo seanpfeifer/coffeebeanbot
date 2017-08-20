@@ -1,5 +1,7 @@
 package main
 
+// Copyright 2017 Sean A. Pfeifer
+
 import (
 	"flag"
 	"log"
