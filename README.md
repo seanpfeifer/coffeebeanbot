@@ -13,6 +13,11 @@ Use `!cbb help` to show the list of available commands.
 
 ### Installation
 
+If you simply want to install the `cbb` binary so you can run your own bot, run the following:
+```sh
+go get github.com/seanpfeifer/coffeebeanbot/cmd/cbb
+```
+
 Retrieve the package using:
 ```sh
 go get github.com/seanpfeifer/coffeebeanbot
