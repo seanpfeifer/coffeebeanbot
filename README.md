@@ -1,6 +1,6 @@
 CoffeeBeanBot
 ====
-`coffeebeanbot` is a coffee bean inspired bot created to help me through my day. Its current focus is to handle "Pomodoro Technique"-style timeboxing notification.
+`coffeebeanbot` is a coffee bean inspired Discord bot created to help me through my day. Its current focus is to handle "Pomodoro Technique"-style timeboxing notification.
 
 If you simply want to use the bot, and not run your own or customize it, you can [invite it to your Discord server using this link](https://discordapp.com/api/oauth2/authorize?client_id=347286461252370432&scope=bot).
 
