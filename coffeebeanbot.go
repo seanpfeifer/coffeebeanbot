@@ -220,10 +220,10 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 	extra = strings.TrimSpace(extra)
 
 	notif := pomodoro.NotifyInfo{
-		extra,
-		m.Author.ID,
-		channel.GuildID,
-		m.ChannelID,
+		Title:     extra,
+		UserID:    m.Author.ID,
+		GuildID:   channel.GuildID,
+		ChannelID: m.ChannelID,
 	}
 
 	if bot.poms.CreateIfEmpty(pomDuration, bot.onPomEnded, notif) {
