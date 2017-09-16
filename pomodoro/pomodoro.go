@@ -36,8 +36,8 @@ type Pomodoro struct {
 	onWorkEnd    TaskCallback
 	notifyInfo   NotifyInfo
 
-	cancelChan chan bool // A channel to interrupt our wait if this Pomodoro is cancelled first
-	cancel     sync.Once // To ensure we only close the cancelChan once
+	cancelChan chan struct{} // A channel to interrupt our wait if this Pomodoro is cancelled first
+	cancel     sync.Once     // To ensure we only close the cancelChan once
 }
 
 // TaskCallback is the type of function that will be called upon Pomodoro task completion.  These may be called in a separate
@@ -63,7 +63,7 @@ func NewPomodoro(workDuration time.Duration, onWorkEnd TaskCallback, notify Noti
 		workDuration,
 		onWorkEnd,
 		notify,
-		make(chan bool),
+		make(chan struct{}),
 		sync.Once{},
 	}
 
