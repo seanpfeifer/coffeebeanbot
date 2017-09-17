@@ -96,7 +96,7 @@ func (pom *Pomodoro) performPom() {
 
 // ChannelPomMap is a map-like structure that has goroutine-safe operations to create Pomodoros on individual channels.
 type ChannelPomMap struct {
-	sync.Mutex
+	mutex        sync.Mutex
 	channelToPom map[string]*Pomodoro
 }
 
@@ -110,8 +110,8 @@ func NewChannelPomMap() ChannelPomMap {
 //
 // This method is goroutine-safe.
 func (m *ChannelPomMap) CreateIfEmpty(duration time.Duration, onWorkEnd TaskCallback, notify NotifyInfo) bool {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	wasCreated := false
 	if _, exists := m.channelToPom[notify.ChannelID]; !exists {
@@ -137,8 +137,8 @@ func (m *ChannelPomMap) CreateIfEmpty(duration time.Duration, onWorkEnd TaskCall
 //
 // This method is goroutine-safe.
 func (m *ChannelPomMap) RemoveIfExists(channel string) bool {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	wasRemoved := false
 	if p, exists := m.channelToPom[channel]; exists {
