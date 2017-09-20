@@ -8,6 +8,17 @@ import (
 	"time"
 )
 
+// timeTolerance is the amount of time difference we will tolerate in a test before failing.
+// The required value can vary between machines and CI environments, so this may need tweaking,
+// but we should keep an eye on it so it stays somewhat reasonable per test.
+const timeTolerance = time.Millisecond * 8
+
+// isDurationTolerable will return true if the two times are within timeTolerance of each other.
+func isDurationTolerable(expected, actual time.Duration) bool {
+	delta := actual - expected
+	return delta <= timeTolerance && delta >= -timeTolerance
+}
+
 func TestPomodoro(t *testing.T) {
 	const testDuration = time.Millisecond * 42
 	c := make(chan bool)
@@ -24,9 +35,7 @@ func TestPomodoro(t *testing.T) {
 	}
 	endDuration := time.Since(startTime)
 
-	const tolerance = time.Millisecond * 2
-	delta := endDuration - testDuration
-	if delta > tolerance {
+	if !isDurationTolerable(testDuration, endDuration) {
 		t.Errorf("Failed to end Pomodoro in time. Expected '%s'. Received '%s'", testDuration, endDuration)
 	}
 }
@@ -52,9 +61,7 @@ func TestPomodoroCancel(t *testing.T) {
 	}
 	endDuration := time.Since(startTime)
 
-	const tolerance = time.Millisecond * 2
-	delta := endDuration - cancelDuration
-	if delta > tolerance {
+	if !isDurationTolerable(cancelDuration, endDuration) {
 		t.Errorf("Failed to end Pomodoro in time. Expected '%s'. Received '%s'", cancelDuration, endDuration)
 	}
 }
@@ -86,9 +93,7 @@ func TestPomMapCreate(t *testing.T) {
 
 		endDuration := time.Since(startTime)
 
-		const tolerance = time.Millisecond * 2
-		delta := endDuration - cases[index].duration
-		if delta > tolerance {
+		if !isDurationTolerable(cases[index].duration, endDuration) {
 			t.Errorf("[%d] Failed to end Pomodoro in time. Expected '%s'. Received '%s'",
 				index, cases[index].duration, endDuration)
 		}
