@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - 1.9
+
+install:
+  - go get github.com/golang/lint/golint
+  - go get github.com/golang/dep/cmd/dep
+  - dep ensure
+
+before_script:
+  # golint does not yet support ignoring the "vendor" directory, so for now we have to use the output of "go list ./...", which does.
+  - golint $(go list ./...)
+  # Intentionally using "go vet" instead of "go tool vet", as the former supports ignoring the "vendor" directory with the "./..." wildcard.
+  - go vet -all -shadow ./...
+
+script:
+  - go test -v -race ./...
