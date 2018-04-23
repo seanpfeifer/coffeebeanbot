@@ -15,13 +15,23 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/go-hclog"
+  packages = ["."]
+  revision = "69ff559dc25f3b435631604f573a5fa1efdb6433"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["nacl/secretbox","poly1305","salsa20/salsa"]
-  revision = "b176d7def5d71bdd214203491f89843ed217f420"
+  packages = [
+    "nacl/secretbox",
+    "poly1305",
+    "salsa20/salsa"
+  ]
+  revision = "e73bf333ef8920dbb52ad18d4bd38ad9d9bc76d7"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "93bb33f2137b28cbe7a26b412b2de8945d8803847dda718499775b08bba59a30"
+  inputs-digest = "065371c42c5ad63d1e2512d4a7adb06f5d47ac0508f767092f1fb0c5ea31c416"
   solver-name = "gps-cdcl"
   solver-version = 1

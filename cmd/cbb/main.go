@@ -4,7 +4,8 @@ package main
 
 import (
 	"flag"
-	"log"
+
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/seanpfeifer/coffeebeanbot"
 )
@@ -12,7 +13,8 @@ import (
 const defaultConfigFile = "cfg.json"
 
 func main() {
-	defer log.Println("------- BOT SHUTDOWN -------")
+	logger := createLogger("cbb")
+	defer logger.Info("------- BOT SHUTDOWN -------")
 
 	// Parse config path
 	configPath := flag.String("cfg", defaultConfigFile, "the config to start the bot with")
@@ -21,14 +23,55 @@ func main() {
 	// Load config
 	cfg, err := coffeebeanbot.LoadConfigFile(*configPath)
 	if err != nil {
-		log.Printf("Error loading config: %v", err)
+		logger.Error("Error loading config", "error", err)
 		return
 	}
 
 	// Start bot
-	bot := coffeebeanbot.NewBot(*cfg)
+	bot := coffeebeanbot.NewBot(*cfg, logger)
 	err = bot.Start()
 	if err != nil {
-		log.Printf("Error starting bot: %v", err)
+		logger.Error("Error starting bot", "error", err)
 	}
 }
+
+type hclogWrapper struct {
+	hclog.Logger
+}
+
+func (h *hclogWrapper) Named(name string) coffeebeanbot.Logger {
+	return &hclogWrapper{h.Logger.Named(name)}
+}
+
+func createLogger(name string) coffeebeanbot.Logger {
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:  name,
+		Level: hclog.Info,
+	})
+
+	return &hclogWrapper{logger}
+}
+
+// What follows is an example of replacing the logger with Uber's `zap` library.
+/*
+type zapWrapper struct {
+	*zap.SugaredLogger
+}
+
+func (z *zapWrapper) Info(msg string, kvPairs ...interface{}) {
+	z.SugaredLogger.Infow(msg, kvPairs...)
+}
+
+func (z *zapWrapper) Error(msg string, kvPairs ...interface{}) {
+	z.SugaredLogger.Errorw(msg, kvPairs...)
+}
+
+func (z *zapWrapper) Named(name string) coffeebeanbot.Logger {
+	return &zapWrapper{z.SugaredLogger.Named(name)}
+}
+
+func createZapLogger(name string) coffeebeanbot.Logger {
+	logger, _ := zap.NewProduction()
+
+	return &zapWrapper{logger.Named(name).Sugar()}
+}*/

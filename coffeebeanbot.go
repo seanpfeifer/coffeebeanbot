@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -54,6 +53,7 @@ type Bot struct {
 	Config      Config
 	cmdHandlers map[string]botCommand
 	discord     *discordgo.Session
+	logger      Logger
 
 	helpMessage        string
 	inviteMessage      string
@@ -86,9 +86,10 @@ func LoadConfigFile(path string) (*Config, error) {
 }
 
 // NewBot is how you should create a new Bot in order to assure that all initialization has been completed.
-func NewBot(config Config) *Bot {
+func NewBot(config Config, logger Logger) *Bot {
 	bot := &Bot{
 		Config: config,
+		logger: logger.Named("bot"),
 		poms:   pomodoro.NewChannelPomMap(),
 	}
 
@@ -103,7 +104,7 @@ func NewBot(config Config) *Bot {
 func (bot *Bot) loadSounds() {
 	audioBuffer, err := LoadDiscordAudio(bot.Config.WorkEndAudio)
 	if err != nil {
-		log.Printf("Error loading audio: %v", err)
+		bot.logger.Error("Error loading audio", "error", err)
 	} else {
 		bot.workEndAudioBuffer = audioBuffer
 	}
@@ -163,7 +164,7 @@ func (bot *Bot) Start() error {
 }
 
 func (bot *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
-	log.Printf("Bot connected and ready as '%s#%s'!", event.User.Username, event.User.Discriminator)
+	bot.logger.Info("Bot connected and ready", "userName", event.User.Username+"#"+event.User.Discriminator)
 }
 
 // onMessageReceived is called when a message is received on a channel that the bot is listening on.
@@ -192,7 +193,7 @@ func (bot *Bot) onMessageReceived(s *discordgo.Session, m *discordgo.MessageCrea
 			if f.handler != nil {
 				f.handler(s, m, rest)
 			} else {
-				log.Printf("Error: nil handler for command '%s'", cmd)
+				bot.logger.Error("nil handler for command", "command", cmd)
 				s.ChannelMessageSend(m.ChannelID, "Command error - please contact support.")
 			}
 		}
@@ -211,7 +212,7 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		// Could not find the channel, so simply log and exit
-		log.Printf("Could not find channel for ChannelID '%s'", m.ChannelID)
+		bot.logger.Error("Could not find channel", "channelID", m.ChannelID)
 		return
 	}
 
