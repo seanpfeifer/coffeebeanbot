@@ -3,6 +3,9 @@ language: go
 go:
   - 1.12.x
 
+env:
+  - GO111MODULE=on
+
 install:
   - go get golang.org/x/lint/golint
   - go get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
