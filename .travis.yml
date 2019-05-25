@@ -4,8 +4,8 @@ go:
   - 1.12.x
 
 install:
-  - go install golang.org/x/lint/golint
-  - go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+  - go get golang.org/x/lint/golint
+  - go get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
   - go build
 
 before_script:
