@@ -4,14 +4,13 @@ go:
   - 1.12.x
 
 install:
-  - go get github.com/golang/lint/golint
+  - go install golang.org/x/lint/golint
+  - go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
   - go build
 
 before_script:
-  # golint does not yet support ignoring the "vendor" directory, so for now we have to use the output of "go list ./...", which does.
-  - golint $(go list ./...)
-  # Intentionally using "go vet" instead of "go tool vet", as the former supports ignoring the "vendor" directory with the "./..." wildcard.
-  - go vet -all -shadow ./...
+  - golint ./...
+  - go vet -vettool=$(which shadow) ./...
 
 script:
   - go test -v -race ./...
