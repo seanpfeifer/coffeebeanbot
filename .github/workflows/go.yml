@@ -18,6 +18,8 @@ jobs:
 
     - name: Set up linters
       run: |
+        # Workaround for https://github.com/actions/setup-go/issues/14 until it is implemented
+        export PATH=$PATH:$(go env GOPATH)/bin
         go get golang.org/x/lint/golint
         go get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 
