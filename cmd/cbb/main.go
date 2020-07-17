@@ -10,7 +10,10 @@ import (
 	"github.com/seanpfeifer/coffeebeanbot"
 )
 
-const defaultConfigFile = "cfg.json"
+const (
+	defaultConfigFile  = "cfg.json"
+	defaultSecretsFile = "./secrets/discord.json"
+)
 
 func main() {
 	logger := createLogger("cbb")
@@ -18,21 +21,25 @@ func main() {
 
 	// Parse config path
 	configPath := flag.String("cfg", defaultConfigFile, "the config to start the bot with")
+	secretsPath := flag.String("secrets", defaultSecretsFile, "the secrets file to load")
 	flag.Parse()
 
 	// Load config
 	cfg, err := coffeebeanbot.LoadConfigFile(*configPath)
-	if err != nil {
-		logger.Error("Error loading config", "error", err)
+	if coffeebeanbot.LogIfError(logger, err, "Error loading config") {
+		return
+	}
+
+	// Load secrets
+	secrets, err := coffeebeanbot.LoadSecretsFile(*secretsPath)
+	if coffeebeanbot.LogIfError(logger, err, "Error loading secrets") {
 		return
 	}
 
 	// Start bot
-	bot := coffeebeanbot.NewBot(*cfg, logger)
+	bot := coffeebeanbot.NewBot(*cfg, *secrets, logger)
 	err = bot.Start()
-	if err != nil {
-		logger.Error("Error starting bot", "error", err)
-	}
+	coffeebeanbot.LogIfError(logger, err, "Error starting bot")
 }
 
 type hclogWrapper struct {

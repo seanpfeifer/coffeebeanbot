@@ -18,10 +18,8 @@ package coffeebeanbot
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"strings"
@@ -51,6 +49,7 @@ type botCommand struct {
 // Bot contains the information needed to run the Discord bot
 type Bot struct {
 	Config      Config
+	secrets     Secrets
 	cmdHandlers map[string]botCommand
 	discord     *discordgo.Session
 	logger      Logger
@@ -61,40 +60,17 @@ type Bot struct {
 	workEndAudioBuffer [][]byte
 }
 
-// Config is the Bot's configuration data
-type Config struct {
-	AuthToken    string `json:"authToken"`    // AuthToken is all that we need to authenticate with Discord as the bot's user
-	ClientID     string `json:"clientID"`     // Used to create the invite link for the bot - this isn't necessary for Discord login
-	CmdPrefix    string `json:"cmdPrefix"`    // The prefix the bot will look for in chat before all known commands
-	WorkEndAudio string `json:"workEndAudio"` // The DCA audio file that will be played when a Pomodoro ends. This is only played if the user is in voice chat in the Discord Server (Guild).
-}
-
-// LoadConfigFile loads the config from the given path, returning the config or an error if one occurred.
-// I generally prefer config files over environment variables, due to the ease of setting them up as secrets
-// in Kubernetes.
-func LoadConfigFile(path string) (*Config, error) {
-	data, err := ioutil.ReadFile(path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var cfg Config
-	err = json.Unmarshal(data, &cfg)
-
-	return &cfg, err
-}
-
 // NewBot is how you should create a new Bot in order to assure that all initialization has been completed.
-func NewBot(config Config, logger Logger) *Bot {
+func NewBot(config Config, secrets Secrets, logger Logger) *Bot {
 	bot := &Bot{
-		Config: config,
-		logger: logger.Named("bot"),
-		poms:   pomodoro.NewChannelPomMap(),
+		Config:  config,
+		secrets: secrets,
+		logger:  logger.Named("bot"),
+		poms:    pomodoro.NewChannelPomMap(),
 	}
 
 	bot.registerCmdHandlers()
-	bot.inviteMessage = fmt.Sprintf("To have me join your server, click here: <"+baseAuthURLTemplate+">", bot.Config.ClientID)
+	bot.inviteMessage = fmt.Sprintf("To have me join your server, click here: <"+baseAuthURLTemplate+">", bot.secrets.ClientID)
 	bot.helpMessage = bot.buildHelpMessage()
 	bot.loadSounds()
 
@@ -103,9 +79,7 @@ func NewBot(config Config, logger Logger) *Bot {
 
 func (bot *Bot) loadSounds() {
 	audioBuffer, err := LoadDiscordAudio(bot.Config.WorkEndAudio)
-	if err != nil {
-		bot.logger.Error("Error loading audio", "error", err)
-	} else {
+	if !LogIfError(bot.logger, err, "Error loading audio") {
 		bot.workEndAudioBuffer = audioBuffer
 	}
 }
@@ -138,12 +112,12 @@ func (bot *Bot) buildHelpMessage() string {
 
 // Start will start the bot, blocking until completion
 func (bot *Bot) Start() error {
-	if bot.Config.AuthToken == "" {
+	if bot.secrets.AuthToken == "" {
 		return errors.New("no auth token found in config")
 	}
 
 	var err error
-	bot.discord, err = discordgo.New(discordBotPrefix + bot.Config.AuthToken)
+	bot.discord, err = discordgo.New(discordBotPrefix + bot.secrets.AuthToken)
 	if err != nil {
 		return err
 	}
@@ -210,9 +184,8 @@ func (bot *Bot) onCmdInvite(s *discordgo.Session, m *discordgo.MessageCreate, ex
 
 func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
 	channel, err := s.State.Channel(m.ChannelID)
-	if err != nil {
+	if LogIfError(bot.logger, err, "Could not find channel", "channelID", m.ChannelID) {
 		// Could not find the channel, so simply log and exit
-		bot.logger.Error("Could not find channel", "channelID", m.ChannelID)
 		return
 	}
 
