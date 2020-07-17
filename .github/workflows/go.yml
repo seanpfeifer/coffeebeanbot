@@ -1,5 +1,11 @@
 name: Tests
-on: [push]
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
 jobs:
 
   test:
@@ -7,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Set up Go 1.12
-      uses: actions/setup-go@v1
+    - name: Set up Go
+      uses: actions/setup-go@v2
       with:
-        go-version: 1.12
+        go-version: ^1.14
       id: go
 
     - name: Check out code into the Go module directory
@@ -18,8 +24,8 @@ jobs:
 
     - name: Set up linters
       run: |
-        go get golang.org/x/lint/golint
-        go get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+        go install golang.org/x/lint/golint
+        go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 
     - name: Get dependencies
       run: |
@@ -27,9 +33,8 @@ jobs:
 
     - name: Run linters
       run: |
-        # Workaround for https://github.com/actions/setup-go/issues/14 until it is implemented
-        export PATH=$PATH:$(go env GOPATH)/bin
         golint ./...
+        go vet ./...
         go vet -vettool=$(which shadow) ./...
         go test -v -race ./...
 
