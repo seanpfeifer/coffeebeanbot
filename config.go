@@ -11,6 +11,7 @@ type Config struct {
 	WorkEndAudio string `json:"workEndAudio"` // The DCA audio file that will be played when a Pomodoro ends. This is only played if the user is in voice chat in the Discord Server (Guild).
 }
 
+// Secrets is the Bot's per-user data, some of which is secret
 type Secrets struct {
 	AuthToken string `json:"authToken"` // AuthToken is all that we need to authenticate with Discord as the bot's user
 	ClientID  string `json:"clientID"`  // Used to create the invite link for the bot - this isn't necessary for Discord login, nor does it need to be "secret"
