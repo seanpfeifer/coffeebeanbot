@@ -9,3 +9,14 @@ type Logger interface {
 	// Named adds a sub-scope to the logger's name
 	Named(name string) Logger
 }
+
+// LogIfError will log the [error + extra info] if the error is non-nil.
+// Returns true if err is non-nil.
+func LogIfError(logger Logger, err error, msg string, extraInfo ...interface{}) bool {
+	if err != nil {
+		info := append([]interface{}{"error", err}, extraInfo...)
+		logger.Error(msg, info...)
+		return true
+	}
+	return false
+}
