@@ -1,7 +1,5 @@
 package coffeebeanbot
 
-// Copyright 2017 Sean A. Pfeifer
-
 import (
 	"encoding/binary"
 	"io"
