@@ -15,13 +15,13 @@ Use `!cbb help` to show the list of available commands.
 For Linux, assuming your `discord.json` lives at `./secrets`:
 
 ```sh
-docker run -v ./secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:latest
+docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:0.0.1
 ```
 
 For Windows PowerShell, assuming your `discord.json` lives at `./secrets`:
 
 ```powershell
-docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:latest
+docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:0.0.1
 ```
 
 ### Installation
