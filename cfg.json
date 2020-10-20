@@ -1,4 +1,6 @@
 {
   "cmdPrefix": "!cbb ",
-  "workEndAudio": "./audio/airhorn.dca"
+  "workEndAudio": "./audio/airhorn.dca",
+  "enableMetrics": true,
+  "debugMetrics": false
 }
