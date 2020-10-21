@@ -15,13 +15,19 @@ Use `!cbb help` to show the list of available commands.
 For Linux, assuming your `discord.json` lives at `./secrets`:
 
 ```sh
-docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:0.0.1
+docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.0
 ```
 
 For Windows PowerShell, assuming your `discord.json` lives at `./secrets`:
 
 ```powershell
-docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:0.0.1
+docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.0
+```
+
+Metrics are disabled by default (see `Metrics` below), but if you want your container to report to Stackdriver:
+
+```sh
+docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.0 -cfg /bot/cfg.json -secrets /secrets/discord.json -stackdriver
 ```
 
 ### Installation
@@ -84,3 +90,17 @@ To show the current list of commands (and your bot's invite link), use the follo
 ```
 !cbb help
 ```
+
+### Metrics
+
+The following aggregated metrics can be recorded so you can tell how your service is performing:
+
+* `connected_servers` - the current number of connected servers (Discord Guilds)
+* `pomodoros_running` - the current number of Pomodoros actively running
+* `pomodoros_started` - the count of Pomodoros started
+
+Aggregated metrics for your running servers are only ever sent to either standard output, or to your Stackdriver if you have it configured. No personal information is ever sent from this service.
+
+To enable sending metrics to stdout, use the command-line parameter `-stdoutMetrics`
+
+To enable sending metrics to your configured Stackdriver, use the command-line parameter `-stackdriver`

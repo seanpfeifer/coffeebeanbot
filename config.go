@@ -7,10 +7,8 @@ import (
 
 // Config is the Bot's configuration data
 type Config struct {
-	CmdPrefix     string `json:"cmdPrefix"`     // The prefix the bot will look for in chat before all known commands
-	WorkEndAudio  string `json:"workEndAudio"`  // The DCA audio file that will be played when a Pomodoro ends. This is only played if the user is in voice chat in the Discord Server (Guild).
-	EnableMetrics bool   `json:"enableMetrics"` // True if metrics exporting should be enabled, false otherwise
-	DebugMetrics  bool   `json:"debugMetrics"`  // True if metrics reporting (when enabled) should ONLY go to stdout, false otherwise. If EnabledMetrics is false, this does nothing.
+	CmdPrefix    string `json:"cmdPrefix"`    // The prefix the bot will look for in chat before all known commands
+	WorkEndAudio string `json:"workEndAudio"` // The DCA audio file that will be played when a Pomodoro ends. This is only played if the user is in voice chat in the Discord Server (Guild).
 }
 
 // Secrets is the Bot's per-user data, some of which is secret

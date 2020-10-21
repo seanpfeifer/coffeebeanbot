@@ -19,8 +19,8 @@ type Recorder struct {
 func NewRecorder() (*Recorder, error) {
 	recorder := &Recorder{
 		startPomCount:   stats.Int64("pomodoros_started", "Count of Pomodoros started", stats.UnitDimensionless),
-		runningPomCount: stats.Int64("pomodoros_running", "Count of Pomodoros running", stats.UnitDimensionless),
-		serverCount:     stats.Int64("connected_servers", "Count of connected servers", stats.UnitDimensionless),
+		runningPomCount: stats.Int64("pomodoros_running", "Current number of Pomodoros running", stats.UnitDimensionless),
+		serverCount:     stats.Int64("connected_servers", "Current number of connected servers", stats.UnitDimensionless),
 	}
 
 	startView := &view.View{
