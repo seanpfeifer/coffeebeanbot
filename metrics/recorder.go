@@ -1,3 +1,6 @@
+// Package metrics handles the aggregated stats that can be reported to a metrics exporter for
+// bot monitoring. This only contains functionality for initializing and managing the stats
+// themselves - the user is expected to set up an OpenCensus exporter.
 package metrics
 
 import (
