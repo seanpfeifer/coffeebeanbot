@@ -179,4 +179,9 @@ func TestPomMapRemove(t *testing.T) {
 	if exists := cpm.RemoveIfExists(createdChan); exists {
 		t.Errorf("Expected false. Actual true.")
 	}
+
+	count = cpm.Count()
+	if count != 0 {
+		t.Errorf("Expected 0 count poms, received %d", count)
+	}
 }
