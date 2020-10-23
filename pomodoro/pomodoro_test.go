@@ -1,21 +1,18 @@
 package pomodoro
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
+
+	. "github.com/seanpfeifer/rigging/assert"
 )
 
 // timeTolerance is the amount of time difference we will tolerate in a test before failing.
 // The required value can vary between machines and CI environments, so this may need tweaking,
 // but we should keep an eye on it so it stays somewhat reasonable per test.
 const timeTolerance = time.Millisecond * 8
-
-// isDurationTolerable will return true if the two times are within timeTolerance of each other.
-func isDurationTolerable(expected, actual time.Duration) bool {
-	delta := actual - expected
-	return delta <= timeTolerance && delta >= -timeTolerance
-}
 
 func TestPomodoro(t *testing.T) {
 	const testDuration = time.Millisecond * 42
@@ -28,14 +25,11 @@ func TestPomodoro(t *testing.T) {
 	// Intentionally not using the returned Pomodoro - no need for it
 	NewPomodoro(testDuration, testFunc, NotifyInfo{})
 	completed := <-c
-	if !completed {
-		t.Error("Expected successful completion, received cancellation.")
-	}
+	ExpectedActual(t, true, completed, "Pomodoro completion")
+
 	endDuration := time.Since(startTime)
 
-	if !isDurationTolerable(testDuration, endDuration) {
-		t.Errorf("Failed to end Pomodoro in time. Expected '%s'. Received '%s'", testDuration, endDuration)
-	}
+	ExpectedApproxDuration(t, testDuration, endDuration, timeTolerance, "ending Pomorodoro on time")
 }
 
 func TestPomodoroCancel(t *testing.T) {
@@ -54,14 +48,10 @@ func TestPomodoroCancel(t *testing.T) {
 	}()
 
 	completed := <-c
-	if completed {
-		t.Error("Expected cancellation, received successful completion.")
-	}
+	ExpectedActual(t, false, completed, "Pomodoro cancellation")
 	endDuration := time.Since(startTime)
 
-	if !isDurationTolerable(cancelDuration, endDuration) {
-		t.Errorf("Failed to end Pomodoro in time. Expected '%s'. Received '%s'", cancelDuration, endDuration)
-	}
+	ExpectedApproxDuration(t, cancelDuration, endDuration, timeTolerance, "cancelling Pomorodoro on time")
 }
 
 func TestPomMapCreate(t *testing.T) {
@@ -91,18 +81,9 @@ func TestPomMapCreate(t *testing.T) {
 
 		endDuration := time.Since(startTime)
 
-		if !isDurationTolerable(cases[index].duration, endDuration) {
-			t.Errorf("[%d] Failed to end Pomodoro in time. Expected '%s'. Received '%s'",
-				index, cases[index].duration, endDuration)
-		}
-
-		if !success {
-			t.Errorf("[%d] Expected success, received cancellation.", index)
-		}
-
-		if info != cases[index].notify {
-			t.Errorf("[%d] Expected correct NotifyInfo %v. Actual %v.", index, cases[index].notify, info)
-		}
+		ExpectedApproxDuration(t, cases[index].duration, endDuration, timeTolerance, fmt.Sprintf("ending Pomorodoro %d on time", index))
+		ExpectedActual(t, true, success, fmt.Sprintf("Pomodoro %d completion success", index))
+		ExpectedActual(t, cases[index].notify, info, fmt.Sprintf("Pomodoro %d NotifyInfo", index))
 	}
 
 	for i := range cases {
@@ -110,10 +91,7 @@ func TestPomMapCreate(t *testing.T) {
 		idx := i
 		created := cpm.CreateIfEmpty(cases[i].duration, func(info NotifyInfo, completed bool) { onFinish(idx, info, completed) }, cases[i].notify)
 
-		if created != cases[i].shouldSucceed {
-			t.Errorf("Did not receive expected creation result for test case %d: Expected %t. Actual %t.",
-				i, cases[i].shouldSucceed, created)
-		}
+		ExpectedActual(t, cases[i].shouldSucceed, created, fmt.Sprintf("Expected creation result for case %d", i))
 		// If the task was never created, then remove it from our WaitGroup
 		if !created {
 			wg.Done()
@@ -129,17 +107,12 @@ func TestPomMapRemove(t *testing.T) {
 		t.Fatal("Expected non-nil map")
 	}
 
-	count := cpm.Count()
-	if count != 0 {
-		t.Errorf("Expected 0 count poms, received %d", count)
-	}
+	ExpectedActual(t, 0, cpm.Count(), "initial count")
 
 	failChan := "Doesn't Exist"
 	createdChan := "Does Exist"
 
-	if exists := cpm.RemoveIfExists(failChan); exists {
-		t.Errorf("Expected false. Actual true.")
-	}
+	ExpectedActual(t, false, cpm.RemoveIfExists(failChan), "removed unknown after initialize")
 
 	createdInfo := NotifyInfo{
 		Title:     "Some title here",
@@ -160,28 +133,12 @@ func TestPomMapRemove(t *testing.T) {
 		t.Fatal("Failed to create valid task")
 	}
 
-	count = cpm.Count()
-	if count != 1 {
-		t.Errorf("Expected 1 count poms, received %d", count)
-	}
-
+	ExpectedActual(t, 1, cpm.Count(), "one count")
 	// Ensure we still don't have this failChan
-	if exists := cpm.RemoveIfExists(failChan); exists {
-		t.Errorf("Expected false. Actual true.")
-	}
-
+	ExpectedActual(t, false, cpm.RemoveIfExists(failChan), "removed unknown after another was added")
 	// Remove the one that was added
-	if exists := cpm.RemoveIfExists(createdChan); !exists {
-		t.Error("Expected removed Pomodoro.")
-	}
-
-	// Ensure it was removed
-	if exists := cpm.RemoveIfExists(createdChan); exists {
-		t.Errorf("Expected false. Actual true.")
-	}
-
-	count = cpm.Count()
-	if count != 0 {
-		t.Errorf("Expected 0 count poms, received %d", count)
-	}
+	ExpectedActual(t, true, cpm.RemoveIfExists(createdChan), "removed created")
+	// Ensure it was actually removed prior to here
+	ExpectedActual(t, false, cpm.RemoveIfExists(createdChan), "create should not exist")
+	ExpectedActual(t, 0, cpm.Count(), "emptied count")
 }
