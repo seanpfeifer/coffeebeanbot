@@ -24,7 +24,7 @@ For Windows PowerShell, assuming your `discord.json` lives at `./secrets`:
 docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.0
 ```
 
-Metrics are disabled by default (see `Metrics` below), but if you want your container to report to Stackdriver:
+Metrics are disabled by default (see `Metrics` below). If you want your container to report to Stackdriver, you need to override the Docker container's parameters to add `-stackdriver`:
 
 ```sh
 docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.0 -cfg /bot/cfg.json -secrets /secrets/discord.json -stackdriver
@@ -82,7 +82,7 @@ The `authToken` and `clientID` values can be found at https://discordapp.com/dev
 
 ### Usage
 
-Run the bot's `cbb` executable from the directory containing your `cfg.json` and `./secrets/discord.json`.
+Run the bot's `cbb` executable from the directory containing your `cfg.json` and `./secrets/discord.json`. See the output of `cbb -h` for details.
 
 Invite the bot to one of your servers via the URL `https://discordapp.com/api/oauth2/authorize?client_id=CLIENT_ID_HERE&scope=bot`, replacing `CLIENT_ID_HERE` with your client ID shown in your config.
 
