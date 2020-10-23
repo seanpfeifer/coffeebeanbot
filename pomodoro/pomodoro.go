@@ -135,3 +135,13 @@ func (m *ChannelPomMap) RemoveIfExists(channel string) bool {
 
 	return wasRemoved
 }
+
+// Size returns the number of Pomodoros currently being tracked.
+//
+// This method is goroutine-safe.
+func (m *ChannelPomMap) Count() int {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	return len(m.channelToPom)
+}

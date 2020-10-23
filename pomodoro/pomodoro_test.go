@@ -129,6 +129,11 @@ func TestPomMapRemove(t *testing.T) {
 		t.Fatal("Expected non-nil map")
 	}
 
+	count := cpm.Count()
+	if count != 0 {
+		t.Errorf("Expected 0 count poms, received %d", count)
+	}
+
 	failChan := "Doesn't Exist"
 	createdChan := "Does Exist"
 
@@ -155,6 +160,11 @@ func TestPomMapRemove(t *testing.T) {
 		t.Fatal("Failed to create valid task")
 	}
 
+	count = cpm.Count()
+	if count != 1 {
+		t.Errorf("Expected 1 count poms, received %d", count)
+	}
+
 	// Ensure we still don't have this failChan
 	if exists := cpm.RemoveIfExists(failChan); exists {
 		t.Errorf("Expected false. Actual true.")
@@ -168,5 +178,10 @@ func TestPomMapRemove(t *testing.T) {
 	// Ensure it was removed
 	if exists := cpm.RemoveIfExists(createdChan); exists {
 		t.Errorf("Expected false. Actual true.")
+	}
+
+	count = cpm.Count()
+	if count != 0 {
+		t.Errorf("Expected 0 count poms, received %d", count)
 	}
 }

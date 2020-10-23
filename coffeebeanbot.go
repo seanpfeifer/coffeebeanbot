@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/seanpfeifer/coffeebeanbot/metrics"
 	"github.com/seanpfeifer/coffeebeanbot/pomodoro"
 )
 
@@ -39,6 +40,7 @@ type Bot struct {
 	cmdHandlers map[string]botCommand
 	discord     *discordgo.Session
 	logger      Logger
+	metrics     metrics.Recorder
 
 	helpMessage        string
 	inviteMessage      string
@@ -47,11 +49,12 @@ type Bot struct {
 }
 
 // NewBot is how you should create a new Bot in order to assure that all initialization has been completed.
-func NewBot(config Config, secrets Secrets, logger Logger) *Bot {
+func NewBot(config Config, secrets Secrets, logger Logger, recorder metrics.Recorder) *Bot {
 	bot := &Bot{
 		Config:  config,
 		secrets: secrets,
 		logger:  logger.Named("bot"),
+		metrics: recorder,
 		poms:    pomodoro.NewChannelPomMap(),
 	}
 
@@ -110,6 +113,9 @@ func (bot *Bot) Start() error {
 
 	bot.discord.AddHandler(bot.onReady)
 	bot.discord.AddHandler(bot.onMessageReceived)
+	// Simply for keeping track of how many guilds we're a part of
+	bot.discord.AddHandler(bot.onGuildCreate)
+	bot.discord.AddHandler(bot.onGuildDelete)
 
 	err = bot.discord.Open()
 	if err != nil {
@@ -124,7 +130,9 @@ func (bot *Bot) Start() error {
 }
 
 func (bot *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
-	bot.logger.Info("Bot connected and ready", "userName", event.User.Username+"#"+event.User.Discriminator)
+	numGuilds := int64(len(s.State.Guilds))
+	bot.logger.Info("Bot connected and ready", "userName", event.User.Username+"#"+event.User.Discriminator, "numGuilds", numGuilds)
+	bot.metrics.RecordConnectedServers(numGuilds)
 }
 
 // onMessageReceived is called when a message is received on a channel that the bot is listening on.
@@ -194,6 +202,8 @@ func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, 
 
 		msg := fmt.Sprintf("%s**%.1f minutes** remaining!", taskStr, pomDuration.Minutes())
 		s.ChannelMessageSend(m.ChannelID, msg)
+		bot.metrics.RecordStartPom()
+		bot.metrics.RecordRunningPoms(int64(bot.poms.Count()))
 	} else {
 		s.ChannelMessageSend(m.ChannelID, "A Pomodoro is already running on this channel.")
 	}
@@ -233,4 +243,16 @@ func (bot *Bot) onPomEnded(notif pomodoro.NotifyInfo, completed bool) {
 	} else {
 		bot.discord.ChannelMessageSend(notif.ChannelID, "Pomodoro cancelled!")
 	}
+
+	bot.metrics.RecordRunningPoms(int64(bot.poms.Count()))
+}
+
+// onGuildCreate is called when a Guild adds the bot.
+func (bot *Bot) onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
+	bot.metrics.RecordConnectedServers(int64(len(s.State.Guilds)))
+}
+
+// onGuildDelete is called when a Guild removes the bot.
+func (bot *Bot) onGuildDelete(s *discordgo.Session, event *discordgo.GuildDelete) {
+	bot.metrics.RecordConnectedServers(int64(len(s.State.Guilds)))
 }
