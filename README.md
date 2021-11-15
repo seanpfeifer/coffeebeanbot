@@ -15,19 +15,19 @@ Use `!cbb help` to show the list of available commands.
 For Linux, assuming your `discord.json` lives at `./secrets`:
 
 ```sh
-docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.1
+docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.5
 ```
 
 For Windows PowerShell, assuming your `discord.json` lives at `./secrets`:
 
 ```powershell
-docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.1
+docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.5
 ```
 
 Metrics are disabled by default (see `Metrics` below). If you want your container to report to Stackdriver, you need to override the Docker container's parameters to add `-stackdriver`:
 
 ```sh
-docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.1 -cfg /bot/cfg.json -secrets /secrets/discord.json -stackdriver
+docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.5 -cfg /bot/cfg.json -secrets /secrets/discord.json -stackdriver
 ```
 
 ### Installation
