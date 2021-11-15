@@ -55,8 +55,8 @@ jobs:
     needs: test
 
     runs-on: ubuntu-latest
-    # Only run this
-    if: github.event_name == 'push'
+    # Only run this on release being published.
+    if: github.event_name == 'release'
 
     steps:
       - uses: actions/checkout@v2
