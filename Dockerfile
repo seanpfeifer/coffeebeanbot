@@ -1,7 +1,7 @@
 #---------------
 #--- Builder ---
 #---------------
-FROM golang:1.15-alpine AS builder
+FROM docker.io/library/golang:1.17-alpine AS builder
 
 COPY [".", "/coffeebeanbot"]
 WORKDIR /coffeebeanbot
