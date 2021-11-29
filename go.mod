@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v0.4.1
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/hashicorp/go-hclog v1.0.0
-	github.com/seanpfeifer/rigging v0.0.0-20210705225007-5952856d6ce3
+	github.com/seanpfeifer/rigging v0.0.0-20211129020327-83d64056028e
 	go.opencensus.io v0.23.0
 )
 
@@ -31,7 +31,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect
-	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
+	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
