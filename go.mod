@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
+	github.com/BurntSushi/toml v0.4.1
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/hashicorp/go-hclog v1.0.0
 	github.com/seanpfeifer/rigging v0.0.0-20210705225007-5952856d6ce3
