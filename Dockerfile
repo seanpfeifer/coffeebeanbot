@@ -19,9 +19,9 @@ VOLUME /secrets
 USER nonroot
 
 # Copy our config (NOT secrets!)
-COPY cfg.json /bot/cfg.json
+COPY cfg.toml /bot/cfg.toml
 # Copy the actual built binary
 COPY --from=builder /cbb /bot/
 
 ENTRYPOINT ["/bot/cbb"]
-CMD ["-cfg", "/bot/cfg.json", "-secrets", "/secrets/discord.json"]
+CMD ["-cfg", "/bot/cfg.toml", "-secrets", "/secrets/discord.toml"]

@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	defaultConfigFile  = "cfg.json"
-	defaultSecretsFile = "./secrets/discord.json"
+	defaultConfigFile  = "cfg.toml"
+	defaultSecretsFile = "./secrets/discord.toml"
 
 	// This should never be less than 60s, or you risk having issues with Stackdriver / a very large bill.
 	stackdriverReportingInterval = 60 * time.Second
