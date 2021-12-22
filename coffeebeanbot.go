@@ -43,7 +43,6 @@ type Bot struct {
 	metrics     metrics.Recorder
 
 	helpMessage        string
-	inviteMessage      string
 	poms               pomodoro.ChannelPomMap
 	workEndAudioBuffer [][]byte
 }
@@ -59,7 +58,6 @@ func NewBot(config Config, secrets Secrets, logger Logger, recorder metrics.Reco
 	}
 
 	bot.registerCmdHandlers()
-	bot.inviteMessage = fmt.Sprintf("To have me join your server, click here: <"+baseAuthURLTemplate+">", bot.secrets.ClientID)
 	bot.helpMessage = bot.buildHelpMessage()
 	bot.loadSounds()
 
@@ -75,7 +73,6 @@ func (bot *Bot) loadSounds() {
 
 func (bot *Bot) registerCmdHandlers() {
 	bot.cmdHandlers = map[string]botCommand{
-		"invite": {handler: bot.onCmdInvite, desc: "Creates an invite link you can use to have the bot join your server", exampleParams: ""},
 		"start":  {handler: bot.onCmdStartPom, desc: "Starts a Pomodoro work cycle on the channel. You can optionally specify the task you are working on", exampleParams: "Create a new notification sound, add an example"},
 		"cancel": {handler: bot.onCmdCancelPom, desc: "Cancels the current Pomodoro work cycle on the channel", exampleParams: ""},
 		"help":   {handler: bot.onCmdHelp, desc: "Shows this help message", exampleParams: ""},
@@ -84,17 +81,16 @@ func (bot *Bot) registerCmdHandlers() {
 
 func (bot *Bot) buildHelpMessage() string {
 	helpBuf := bytes.Buffer{}
-	helpBuf.WriteString("This bot was written by Sean A. Pfeifer to help him get more done.\n")
+	helpBuf.WriteString("This bot was written by Sean Pfeifer to help him get more done.\n")
 
 	// I don't really care about ordering right now - this is intentionally using the map iteration order,
 	// which I am aware is pseudo-random.
-	// TODO: Add a "group" attribute to the commands, and sort by group, then command.
 	for cmdStr, cmd := range bot.cmdHandlers {
 		helpBuf.WriteString(fmt.Sprintf("\n•  **%s**  -  %s\n", cmdStr, cmd.desc))
 		helpBuf.WriteString(fmt.Sprintf("    Example: `%s%s %s`\n", bot.Config.CmdPrefix, cmdStr, cmd.exampleParams))
 	}
 
-	helpBuf.WriteString("\n" + bot.inviteMessage)
+	helpBuf.WriteString("\nTo have me join your server, click on my name and 'Add to Server'.")
 
 	return helpBuf.String()
 }
@@ -113,7 +109,7 @@ func (bot *Bot) Start() error {
 
 	bot.discord.AddHandler(bot.onReady)
 	bot.discord.AddHandler(bot.onMessageReceived)
-	// Simply for keeping track of how many guilds we're a part of
+	// Simply for keeping track of how many guilds we're a part of (to monitor bot health)
 	bot.discord.AddHandler(bot.onGuildCreate)
 	bot.discord.AddHandler(bot.onGuildDelete)
 
@@ -170,10 +166,6 @@ func (bot *Bot) onMessageReceived(s *discordgo.Session, m *discordgo.MessageCrea
 
 func (bot *Bot) onCmdHelp(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
 	s.ChannelMessageSend(m.ChannelID, bot.helpMessage)
-}
-
-func (bot *Bot) onCmdInvite(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
-	s.ChannelMessageSend(m.ChannelID, bot.inviteMessage)
 }
 
 func (bot *Bot) onCmdStartPom(s *discordgo.Session, m *discordgo.MessageCreate, extra string) {
