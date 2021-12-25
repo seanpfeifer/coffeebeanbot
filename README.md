@@ -1,6 +1,6 @@
 # CoffeeBeanBot
 
-[![Discord Invite](https://img.shields.io/badge/Invite%20Bot-Discord-blue.svg)](https://discordapp.com/api/oauth2/authorize?client_id=347286461252370432&scope=bot) [![GoDoc](https://godoc.org/github.com/seanpfeifer/coffeebeanbot?status.svg)](https://godoc.org/github.com/seanpfeifer/coffeebeanbot) [![Go Report Card](https://goreportcard.com/badge/github.com/seanpfeifer/coffeebeanbot)](https://goreportcard.com/report/github.com/seanpfeifer/coffeebeanbot) ![Build Status](https://github.com/seanpfeifer/coffeebeanbot/workflows/Tests/badge.svg)
+[![Discord Invite](https://img.shields.io/badge/Invite%20Bot-Discord-blue.svg)](https://discord.com/api/oauth2/authorize?client_id=347286461252370432&permissions=0&scope=bot%20applications.commands) [![GoDoc](https://godoc.org/github.com/seanpfeifer/coffeebeanbot?status.svg)](https://godoc.org/github.com/seanpfeifer/coffeebeanbot) [![Go Report Card](https://goreportcard.com/badge/github.com/seanpfeifer/coffeebeanbot)](https://goreportcard.com/report/github.com/seanpfeifer/coffeebeanbot) ![Build Status](https://github.com/seanpfeifer/coffeebeanbot/workflows/Tests/badge.svg)
 
 `coffeebeanbot` is a coffee bean inspired Discord bot created to help me through my day. Its current focus is to handle "Pomodoro Technique"-style timeboxing notification.
 
