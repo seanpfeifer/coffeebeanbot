@@ -140,7 +140,6 @@ func (bot *Bot) onAppCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
-	bot.logger.Info("appCmd", fmt.Sprintf("%+v", *i))
 
 	data := i.ApplicationCommandData()
 	switch data.Name {
