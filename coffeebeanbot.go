@@ -105,7 +105,6 @@ func (bot *Bot) Start() error {
 	}
 
 	bot.discord.AddHandler(bot.onReady)
-	bot.discord.AddHandler(bot.onDeprecatedMessage) // Deprecated - will be removed when this functionality is disabled by Discord
 	// Our app command handler, which dispatches all incoming commands
 	bot.discord.AddHandler(bot.onAppCmd)
 	// Simply for keeping track of how many guilds we're a part of (to monitor bot health)

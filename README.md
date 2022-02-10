@@ -16,19 +16,19 @@ If you simply want to use the bot, and not run your own or customize it, you can
 For Linux, assuming your `discord.toml` lives at `./secrets`:
 
 ```sh
-docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.5
+docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:2.1.0
 ```
 
 For Windows PowerShell, assuming your `discord.toml` lives at `./secrets`:
 
 ```powershell
-docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.5
+docker run -v ${PWD}\secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:2.1.0
 ```
 
 Metrics are disabled by default (see `Metrics` below). If you want your container to report to Stackdriver, you need to override the Docker container's parameters to add `-stackdriver`:
 
 ```sh
-docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:1.0.5 -cfg /bot/cfg.toml -secrets /secrets/discord.toml -stackdriver
+docker run -v $(pwd)/secrets:/secrets docker.pkg.github.com/seanpfeifer/coffeebeanbot/cbb:2.1.0 -cfg /bot/cfg.toml -secrets /secrets/discord.toml -stackdriver
 ```
 
 ### Installation
