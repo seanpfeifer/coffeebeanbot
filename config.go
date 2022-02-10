@@ -4,7 +4,6 @@ import "github.com/BurntSushi/toml"
 
 // Config is the Bot's configuration data
 type Config struct {
-	CmdPrefix    string `toml:"cmdPrefix"`    // The prefix the bot will look for in chat before all known commands
 	WorkEndAudio string `toml:"workEndAudio"` // The DCA audio file that will be played when a Pomodoro ends. This is only played if the user is in voice chat in the Discord Server (Guild).
 }
 
