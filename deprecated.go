@@ -55,7 +55,9 @@ func (bot *Bot) onDeprecatedStart(s *discordgo.Session, m *discordgo.MessageCrea
 		ChannelID: m.ChannelID,
 	}
 	if bot.poms.CreateIfEmpty(pomDuration, bot.onPomEnded, notif) {
-		taskStr := "Started task  -  "
+		taskStr := "Use Slash commands instead: `/" + startCmdName + "` and `/" + cancelCmdName + "`.\n" +
+			"If these do not work, please re-invite me using 'Add to server' on my profile.\n\n" +
+			"Started task  -  "
 		if len(notif.Title) > 0 {
 			taskStr = fmt.Sprintf("```md\n%s\n```", notif.Title)
 		}
