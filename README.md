@@ -1,12 +1,13 @@
 # CoffeeBeanBot
 
-[![Discord Invite](https://img.shields.io/badge/Invite%20Bot-Discord-blue.svg)](https://discordapp.com/api/oauth2/authorize?client_id=347286461252370432&scope=bot) [![GoDoc](https://godoc.org/github.com/seanpfeifer/coffeebeanbot?status.svg)](https://godoc.org/github.com/seanpfeifer/coffeebeanbot) [![Go Report Card](https://goreportcard.com/badge/github.com/seanpfeifer/coffeebeanbot)](https://goreportcard.com/report/github.com/seanpfeifer/coffeebeanbot) ![Build Status](https://github.com/seanpfeifer/coffeebeanbot/workflows/Tests/badge.svg)
+[![Discord Invite](https://img.shields.io/badge/Invite%20Bot-Discord-blue.svg)](https://discord.com/api/oauth2/authorize?client_id=347286461252370432&scope=bot%20applications.commands) [![GoDoc](https://godoc.org/github.com/seanpfeifer/coffeebeanbot?status.svg)](https://godoc.org/github.com/seanpfeifer/coffeebeanbot) [![Go Report Card](https://goreportcard.com/badge/github.com/seanpfeifer/coffeebeanbot)](https://goreportcard.com/report/github.com/seanpfeifer/coffeebeanbot) ![Build Status](https://github.com/seanpfeifer/coffeebeanbot/workflows/Tests/badge.svg)
 
 `coffeebeanbot` is a coffee bean inspired Discord bot created to help me through my day. Its current focus is to handle "Pomodoro Technique"-style timeboxing notification.
 
-If you simply want to use the bot, and not run your own or customize it, you can [invite it to your Discord server using this link](https://discordapp.com/api/oauth2/authorize?client_id=347286461252370432&scope=bot).
+If you simply want to use the bot, and not run your own or customize it, you can [invite it to your Discord server using this link](https://discord.com/api/oauth2/authorize?client_id=347286461252370432&scope=bot%20applications.commands).
 
-Use `!cbb help` to show the list of available commands.
+* `/pomstart`: Starts a pomodoro
+* `/pomcancel`: Cancels the pomodoro
 
 ## Getting Started
 
@@ -58,7 +59,6 @@ Create a `cfg.toml` file that exists wherever you want to run the bot from.
 
 Sample `cfg.toml`:
 ```toml
-cmdPrefix = "!cbb "
 workEndAudio =  "audio/airhorn.dca"
 ```
 
@@ -80,12 +80,9 @@ The `authToken` and `appID` values can be found at https://discordapp.com/develo
 
 Run the bot's `cbb` executable from the directory containing your `cfg.toml` and `./secrets/discord.toml`. See the output of `cbb -h` for details.
 
-Invite the bot to one of your servers via the URL `https://discordapp.com/api/oauth2/authorize?client_id=CLIENT_ID_HERE&scope=bot`, replacing `CLIENT_ID_HERE` with your client ID shown in your config.
+Invite the bot to one of your servers via the URL `https://discordapp.com/api/oauth2/authorize?client_id=CLIENT_ID_HERE&scope=bot%20applications.commands`, replacing `CLIENT_ID_HERE` with your client ID shown in your config.
 
-To show the current list of commands (and your bot's invite link), use the following command after you've invited the bot to one of your servers:
-```
-!cbb help
-```
+To show the current list of commands (and your bot's invite button), use the bot's profile in Discord.
 
 ### Metrics
 
