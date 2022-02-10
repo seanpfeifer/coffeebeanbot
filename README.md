@@ -65,12 +65,12 @@ workEndAudio =  "audio/airhorn.dca"
 Sample `discord.toml`:
 ```toml
 authToken = "PASTE_AUTH_TOKEN_HERE"
-clientID = "PASTE_CLIENT_ID_HERE"
+appID = "PASTE_APPLICATION_ID_HERE"
 ```
 
-The `authToken` and `clientID` values can be found at https://discordapp.com/developers/applications/me
+The `authToken` and `appID` values can be found at https://discordapp.com/developers/applications/me
 
-* Create your App and copy the `Client ID` into your `discord.toml`.
+* Create your App and copy the `Application ID` into your `discord.toml`.
 * Click `Create a Bot User`.
 * Under "App Bot User" click "click to reveal" on `Token` and copy the value into your `discord.toml`.
 * Save Changes.

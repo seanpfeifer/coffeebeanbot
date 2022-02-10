@@ -11,7 +11,7 @@ type Config struct {
 // Secrets is the Bot's per-user data, some of which is secret
 type Secrets struct {
 	AuthToken string `toml:"authToken"` // AuthToken is all that we need to authenticate with Discord as the bot's user
-	ClientID  string `toml:"clientID"`  // Used to create the invite link for the bot - this isn't necessary for Discord login, nor does it need to be "secret"
+	AppID     string `toml:"appID"`     // The application ID from the bot info. This isn't necessarily "secret"
 }
 
 // LoadConfigFile loads the config from the given path, returning the config or an error if one occurred.
