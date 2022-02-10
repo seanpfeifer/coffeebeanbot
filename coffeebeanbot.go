@@ -202,7 +202,7 @@ func (bot *Bot) onAppCmdCancel(s *discordgo.Session, i *discordgo.Interaction) {
 		s.InteractionRespond(i, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "No Pomodoro running on this channel to cancel.",
+				Content: "No Pomodoro running on this channel.",
 				Flags:   flagEphemeral,
 			},
 		})
