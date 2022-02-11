@@ -1,5 +1,5 @@
 // Package pomodoro contains functionality for timing work tasks and calling a user-supplied callback on end or cancel.
-// This is currently Discord-specific, due to the "NotifyInfo" struct being strongly typed, rather than an interface{}.
+// This is currently Discord-specific, due to the "NotifyInfo" struct being strongly typed, rather than an "any".
 // I prefer this for now, until other concrete use cases have been decided upon.
 package pomodoro
 

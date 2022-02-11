@@ -126,11 +126,11 @@ type zapWrapper struct {
 	*zap.SugaredLogger
 }
 
-func (z *zapWrapper) Info(msg string, kvPairs ...interface{}) {
+func (z *zapWrapper) Info(msg string, kvPairs ...any) {
 	z.SugaredLogger.Infow(msg, kvPairs...)
 }
 
-func (z *zapWrapper) Error(msg string, kvPairs ...interface{}) {
+func (z *zapWrapper) Error(msg string, kvPairs ...any) {
 	z.SugaredLogger.Errorw(msg, kvPairs...)
 }
 
