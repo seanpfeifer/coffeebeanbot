@@ -29,7 +29,7 @@ func TestPomodoro(t *testing.T) {
 
 	endDuration := time.Since(startTime)
 
-	ExpectedApproxDuration(t, testDuration, endDuration, timeTolerance, "ending Pomorodoro on time")
+	ExpectedApprox(t, testDuration, endDuration, timeTolerance, "ending Pomorodoro on time")
 }
 
 func TestPomodoroCancel(t *testing.T) {
@@ -51,7 +51,7 @@ func TestPomodoroCancel(t *testing.T) {
 	ExpectedActual(t, false, completed, "Pomodoro cancellation")
 	endDuration := time.Since(startTime)
 
-	ExpectedApproxDuration(t, cancelDuration, endDuration, timeTolerance, "cancelling Pomorodoro on time")
+	ExpectedApprox(t, cancelDuration, endDuration, timeTolerance, "cancelling Pomorodoro on time")
 }
 
 func TestPomMapCreate(t *testing.T) {
@@ -81,7 +81,7 @@ func TestPomMapCreate(t *testing.T) {
 
 		endDuration := time.Since(startTime)
 
-		ExpectedApproxDuration(t, cases[index].duration, endDuration, timeTolerance, fmt.Sprintf("ending Pomorodoro %d on time", index))
+		ExpectedApprox(t, cases[index].duration, endDuration, timeTolerance, fmt.Sprintf("ending Pomorodoro %d on time", index))
 		ExpectedActual(t, true, success, fmt.Sprintf("Pomodoro %d completion success", index))
 		ExpectedActual(t, cases[index].notify, info, fmt.Sprintf("Pomodoro %d NotifyInfo", index))
 	}

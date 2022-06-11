@@ -4,10 +4,10 @@ go 1.18
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
-	github.com/BurntSushi/toml v1.0.0
+	github.com/BurntSushi/toml v1.1.0
 	github.com/bwmarrin/discordgo v0.23.3-0.20220202194601-aba5dc811da8
 	github.com/hashicorp/go-hclog v1.1.0
-	github.com/seanpfeifer/rigging v0.0.1
+	github.com/seanpfeifer/rigging v0.2.0
 	go.opencensus.io v0.23.0
 )
 
@@ -26,7 +26,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	golang.org/x/crypto v0.0.0-20220209195652-db638375bc3a // indirect
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
