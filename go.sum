@@ -89,8 +89,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/prometheus/prometheus v0.42.0 h1:G769v8covTkOiNckXFIwLx01XE04OE6Fr0JPA0oR2nI=
 github.com/prometheus/prometheus v0.42.0/go.mod h1:Pfqb/MLnnR2KK+0vchiaH39jXxvLMBk+3lnIGP4N7Vk=
-github.com/seanpfeifer/rigging v0.2.1 h1:YSC44Zuh8N5gOaj5Wzx+x4wgKKvPb6bj9GHavJ+JSdA=
-github.com/seanpfeifer/rigging v0.2.1/go.mod h1:wX5k+wfgMcZFrc4QvV0EIVdCliOvO7QbOW0thHwYNx0=
+github.com/seanpfeifer/rigging v0.3.0 h1:orgGPObOF4fYVn8q/WZXwTIG3EdMglWzdyP8fN4YJpQ=
+github.com/seanpfeifer/rigging v0.3.0/go.mod h1:Hm+yEehkC9sgWmAyr0ldoWGBvzkg45YA7XxvsNKBiws=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=

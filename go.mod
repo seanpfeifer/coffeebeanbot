@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/bwmarrin/discordgo v0.27.0
 	github.com/hashicorp/go-hclog v1.4.0
-	github.com/seanpfeifer/rigging v0.2.1
+	github.com/seanpfeifer/rigging v0.3.0
 	go.opencensus.io v0.24.0
 )
 
