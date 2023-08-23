@@ -2,10 +2,11 @@ package main
 
 import (
 	"flag"
+	"log/slog"
+	"os"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"github.com/hashicorp/go-hclog"
 	"go.opencensus.io/examples/exporter"
 	"go.opencensus.io/stats/view"
 
@@ -28,7 +29,7 @@ type metricsOptions struct {
 }
 
 func main() {
-	logger := createLogger("cbb")
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	defer logger.Info("------- BOT SHUTDOWN -------")
 
 	// Parse config + secrets file paths
@@ -102,44 +103,3 @@ func setupMetricsExporter(opts metricsOptions) (func(), error) {
 
 	return noop, nil
 }
-
-type hclogWrapper struct {
-	hclog.Logger
-}
-
-func (h *hclogWrapper) Named(name string) coffeebeanbot.Logger {
-	return &hclogWrapper{h.Logger.Named(name)}
-}
-
-func createLogger(name string) coffeebeanbot.Logger {
-	logger := hclog.New(&hclog.LoggerOptions{
-		Name:  name,
-		Level: hclog.Info,
-	})
-
-	return &hclogWrapper{logger}
-}
-
-// What follows is an example of replacing the logger with Uber's `zap` library.
-/*
-type zapWrapper struct {
-	*zap.SugaredLogger
-}
-
-func (z *zapWrapper) Info(msg string, kvPairs ...any) {
-	z.SugaredLogger.Infow(msg, kvPairs...)
-}
-
-func (z *zapWrapper) Error(msg string, kvPairs ...any) {
-	z.SugaredLogger.Errorw(msg, kvPairs...)
-}
-
-func (z *zapWrapper) Named(name string) coffeebeanbot.Logger {
-	return &zapWrapper{z.SugaredLogger.Named(name)}
-}
-
-func createZapLogger(name string) coffeebeanbot.Logger {
-	logger, _ := zap.NewProduction()
-
-	return &zapWrapper{logger.Named(name).Sugar()}
-}*/

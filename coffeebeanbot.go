@@ -5,6 +5,7 @@ package coffeebeanbot
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
@@ -25,30 +26,24 @@ const (
 	flagEphemeral    = 1 << 6 // The flag that specifies that a message is "ephemeral". ie, only visible to the caller
 )
 
-// cmdHandler is the type for our functions that will be called upon receiving commands from a user.
-type cmdHandler func(s *discordgo.Session, m *discordgo.MessageCreate, extra string)
-
-type appCmdHandler func(*discordgo.Session, *discordgo.Interaction)
-
 // Bot contains the information needed to run the Discord bot
 type Bot struct {
 	Config  Config
 	secrets Secrets
 	discord *discordgo.Session
-	logger  Logger
+	logger  *slog.Logger
 	metrics metrics.Recorder
 
-	helpMessage        string
 	poms               pomodoro.ChannelPomMap
 	workEndAudioBuffer [][]byte
 }
 
 // NewBot is how you should create a new Bot in order to assure that all initialization has been completed.
-func NewBot(config Config, secrets Secrets, logger Logger, recorder metrics.Recorder) *Bot {
+func NewBot(config Config, secrets Secrets, logger *slog.Logger, recorder metrics.Recorder) *Bot {
 	bot := &Bot{
 		Config:  config,
 		secrets: secrets,
-		logger:  logger.Named("bot"),
+		logger:  logger,
 		metrics: recorder,
 		poms:    pomodoro.NewChannelPomMap(),
 	}
@@ -122,7 +117,7 @@ func (bot *Bot) Start() error {
 	}
 
 	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
 	return bot.discord.Close()
